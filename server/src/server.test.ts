@@ -30,7 +30,7 @@ describe('Bowman Server', () => {
         .send({});
       
       expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Path is required');
+      expect(res.body.error).toBe('Path must be a non-empty string');
     });
 
     it('should suggest initialization if .quiver directory does not exist', async () => {
@@ -42,7 +42,7 @@ describe('Bowman Server', () => {
       
       expect(res.status).toBe(404);
       expect(res.body.error).toBe('No .quiver directory found in the specified path');
-      expect(res.body.requiresInitialization).toBe(true);
+      expect(res.body.code).toBe('QUIVER_NOT_FOUND');
     });
 
     it('should set repository if .quiver exists', async () => {
@@ -362,7 +362,7 @@ describe('Bowman Server', () => {
         });
       
       expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Path is required');
+      expect(res.body.error).toBe('Path must be a non-empty string');
     });
 
     it('should reject if no root aim provided', async () => {
@@ -373,7 +373,7 @@ describe('Bowman Server', () => {
         .send({ path: TEST_REPO });
       
       expect(res.status).toBe(400);
-      expect(res.body.error).toBe('Root aim title and description are required');
+      expect(res.body.error).toBe('Root aim must be an object');
     });
   });
 });

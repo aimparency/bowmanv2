@@ -47,7 +47,11 @@ export interface Meta {
 }
 
 export class BowmanAPI {
-  constructor(private baseURL: string) {}
+  private baseURL: string;
+  
+  constructor(baseURL: string) {
+    this.baseURL = baseURL;
+  }
 
   private async request<T>(path: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${this.baseURL}${path}`, options);
@@ -60,7 +64,7 @@ export class BowmanAPI {
     return data;
   }
 
-  async setRepository(path: string): Promise<{ success: boolean; path: string }> {
+  async setRepository(path: string): Promise<{ success: boolean; path: string; initialized?: boolean }> {
     return this.request('/api/repo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

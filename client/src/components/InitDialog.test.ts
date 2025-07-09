@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import InitDialog from './InitDialog.vue';
 
@@ -8,9 +8,9 @@ describe('InitDialog', () => {
       props: { visible: true }
     });
     
-    expect(wrapper.find('input[placeholder*="title"]').exists()).toBe(true);
-    expect(wrapper.find('textarea[placeholder*="description"]').exists()).toBe(true);
-    expect(wrapper.find('button').text()).toContain('Initialize');
+    expect(wrapper.find('input#title').exists()).toBe(true);
+    expect(wrapper.find('textarea#description').exists()).toBe(true);
+    expect(wrapper.find('button[type="submit"]').text()).toContain('Initialize');
   });
 
   it('should not be visible when visible prop is false', () => {
@@ -26,16 +26,15 @@ describe('InitDialog', () => {
       props: { visible: true }
     });
     
-    await wrapper.find('input').setValue('My Project Goal');
-    await wrapper.find('textarea').setValue('This is the main goal for my project');
+    await wrapper.find('input#title').setValue('My Project Goal');
+    await wrapper.find('textarea#description').setValue('This is the main goal for my project');
     await wrapper.find('form').trigger('submit');
     
     expect(wrapper.emitted('initialize')).toBeTruthy();
     expect(wrapper.emitted('initialize')![0]).toEqual([{
       title: 'My Project Goal',
       description: 'This is the main goal for my project',
-      category: 'goal',
-      priority: 'high'
+      statusNote: undefined
     }]);
   });
 

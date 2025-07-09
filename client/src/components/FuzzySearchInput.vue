@@ -57,7 +57,15 @@ const props = withDefaults(defineProps<Props>(), {
     }
     return String(suggestion);
   },
-  getSuggestionKey: (suggestion: T, index: number) => index,
+  getSuggestionKey: (suggestion: T) => {
+    // Use a more stable key generation approach
+    if (typeof suggestion === 'string') return suggestion;
+    if (suggestion && typeof suggestion === 'object') {
+      const obj = suggestion as any;
+      return obj.id || obj.key || obj.name || obj.title || Math.random().toString(36);
+    }
+    return Math.random().toString(36);
+  },
   maxSuggestions: 7
 });
 
@@ -69,7 +77,7 @@ defineEmits<{
 }>();
 
 // Refs
-const suggestionInputRef = ref<InstanceType<typeof SuggestionInput>>();
+const suggestionInputRef = ref<any>();
 
 // Fuse.js instance
 const fuse = computed(() => {

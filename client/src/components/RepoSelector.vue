@@ -48,14 +48,16 @@ const handleDirectorySelected = async (directoryHandle: FileSystemDirectoryHandl
   // This is a simplified approach - in reality, we'd need to handle this differently
   selectedPath.value = directoryHandle.name;
   emit('clear-error');
+  proceedWithPath();
 };
 
 const handleManualPath = (path: string) => {
   selectedPath.value = path;
   emit('clear-error');
+  proceedWithPath();
 };
 
-const handlePickerError = (message: string) => {
+const handlePickerError = () => {
   // Let parent handle the error display
   emit('clear-error');
 };

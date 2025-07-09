@@ -43,12 +43,23 @@
         </button>
       </div>
     </div>
+    
+    <!-- Validation error display -->
+    <div v-if="validationError" class="validation-error">
+      {{ validationError.message }}
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import FuzzySearchInput from './FuzzySearchInput.vue';
+
+// Define error types
+interface ValidationError {
+  field: string;
+  message: string;
+}
 
 export interface TagSuggestion {
   name: string;
@@ -73,11 +84,13 @@ const emit = defineEmits<{
   'update:modelValue': [tags: string[]];
   'tag-added': [tag: string];
   'tag-removed': [tag: string];
+  'validation-error': [error: ValidationError];
 }>();
 
 // Refs
 const input = ref('');
-const fuzzySearchRef = ref<InstanceType<typeof FuzzySearchInput>>();
+const fuzzySearchRef = ref<any>();
+const validationError = ref<ValidationError | null>(null);
 
 // Computed
 const availableTags = computed(() => {
@@ -95,9 +108,17 @@ const addTag = () => {
   
   // Validate tag length
   if (tagName.length > props.maxLength) {
-    alert(`Tag must be ${props.maxLength} characters or less`);
+    const error: ValidationError = {
+      field: 'tag',
+      message: `Tag must be ${props.maxLength} characters or less`
+    };
+    validationError.value = error;
+    emit('validation-error', error);
     return;
   }
+  
+  // Clear any previous validation errors
+  validationError.value = null;
   
   // Check if tag already exists
   if (props.modelValue.includes(tagName)) {
@@ -263,6 +284,16 @@ defineExpose({ focus });
 .tag-count {
   color: #666;
   font-size: 12px;
+}
+
+.validation-error {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+  padding: 4px 8px;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
 }
 
 @media (max-width: 768px) {

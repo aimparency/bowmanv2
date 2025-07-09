@@ -136,7 +136,7 @@ const loadAimAndRelated = async (aimId: AimId) => {
   
   try {
     // Load the aim itself
-    const aim = await api.getAim(aimId.id);
+    const aim = await api.getAim(aimKey);
     aims.set(aimKey, aim);
     
     // Load incoming contributions
@@ -157,7 +157,7 @@ const loadAimAndRelated = async (aimId: AimId) => {
     }
     
   } catch (err) {
-    console.error(`Failed to load aim ${aimKey}:`, err);
+    error.value = `Failed to load aim ${aimKey}: ${err instanceof Error ? err.message : 'Unknown error'}`;
   }
 };
 
@@ -188,9 +188,10 @@ const handleInitialize = async (rootAim: any) => {
   }
 };
 
-const handleAimSelected = (aimId: string) => {
+const handleAimSelected = (_aimId: string) => {
   // TODO: Show aim details in sidebar or modal
-  console.log('Selected aim:', aimId);
+  // For now, just store the selected aim ID
+  // Future implementation: open aim details modal
 };
 
 const resetRepo = () => {

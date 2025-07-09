@@ -46,10 +46,10 @@
         <!-- Aim nodes -->
         <AimNode 
           v-for="aim in aimsArray" 
-          :key="aim.id.id"
+          :key="aimIdToString(aim.id)"
           :aim="aim"
-          :position="aimPositions.get(aim.id.id)!"
-          :selected="selectedAim === aim.id.id"
+          :position="aimPositions.get(aimIdToString(aim.id)) || [0, 0]"
+          :selected="selectedAim === aimIdToString(aim.id)"
           @select="selectAim"
           @drag="handleAimDrag"
         />
@@ -66,8 +66,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue';
-import type { Aim, Contribution } from '../services/api';
+import { ref, computed, onMounted, reactive, watch } from 'vue';
+import type { Aim, Contribution, AimId } from '../services/api';
 import AimNode from './AimNode.vue';
 import AimConnection from './AimConnection.vue';
 import * as vec2 from '../utils/vec2';
@@ -78,6 +78,11 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+// Helper function to convert AimId to string key
+const aimIdToString = (id: AimId): string => {
+  return id.repoLink ? `${id.repoLink}#${id.id}` : id.id;
+};
 
 const emit = defineEmits<{
   'aim-selected': [aimId: string];
@@ -145,16 +150,17 @@ const initializePositions = () => {
   const radius = 200;
   
   aims.forEach((aim, index) => {
+    const aimKey = aimIdToString(aim.id);
     // Use metadata position if available, otherwise arrange in circle
     if (aim.metadata?.position) {
-      aimPositions.set(aim.id.id, [aim.metadata.position.x - 400, aim.metadata.position.y - 200]);
+      aimPositions.set(aimKey, [aim.metadata.position.x - 400, aim.metadata.position.y - 200]);
     } else {
       const angle = (index / aims.length) * 2 * Math.PI;
       const pos: vec2.Vec2 = [
         center[0] + Math.cos(angle) * radius,
         center[1] + Math.sin(angle) * radius
       ];
-      aimPositions.set(aim.id.id, pos);
+      aimPositions.set(aimKey, pos);
     }
   });
 };
@@ -256,12 +262,12 @@ onMounted(() => {
 });
 
 // Watch for prop changes
-const unwatchAims = () => {
+// Update positions when aims change
+watch(() => props.aims, () => {
   updatePositions();
-};
+});
 
 // Call updatePositions when aims change
-const observer = new MutationObserver(unwatchAims);
 </script>
 
 <style scoped>

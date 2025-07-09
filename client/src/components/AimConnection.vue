@@ -129,8 +129,8 @@ const labelFontSize = computed(() => Math.max(10, strokeWidth.value * 3));
 // Position calculations
 const nodeRadius = 40; // Default node radius
 
-const fromPos = computed(() => props.aims.get(props.connection.from) || [0, 0]);
-const toPos = computed(() => props.aims.get(props.connection.to) || [0, 0]);
+const fromPos = computed(() => props.aims.get(props.connection.from) || [0, 0] as Vec2);
+const toPos = computed(() => props.aims.get(props.connection.to) || [0, 0] as Vec2);
 
 const controlPoints = computed(() => {
   const curvature = props.connection.curvature || 0.3;
@@ -220,8 +220,8 @@ const handleControlMouseMove = (event: MouseEvent) => {
         const midpoint = vec2.crAdd(fromPos.value, toPos.value);
         vec2.scale(midpoint, midpoint, 0.5);
         
-        const mouseOffset = vec2.crSub([svgP.x, svgP.y], midpoint);
-        const perpendicularDistance = dot(mouseOffset, perpendicular);
+        const mouseOffset = vec2.crSub([svgP.x, svgP.y] as Vec2, midpoint);
+        const perpendicularDistance = vec2.dot(mouseOffset, perpendicular);
         
         // Convert to curvature (normalized by connection length)
         const newCurvature = perpendicularDistance / connectionLength;
@@ -241,8 +241,6 @@ const handleControlMouseUp = () => {
   document.removeEventListener('mouseup', handleControlMouseUp);
 };
 
-// Import dot product from vec2 utilities
-const { dot } = vec2;
 </script>
 
 <style scoped>

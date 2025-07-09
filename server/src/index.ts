@@ -7,24 +7,26 @@ const wss = new WebSocketServer({ server });
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {
-  console.log('Client connected');
+  // TODO: Add proper logging instead of console.log
   
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message.toString());
-      console.log('Received:', data);
+      // TODO: Add proper message handling
     } catch (error) {
-      console.error('Invalid message:', error);
+      // TODO: Add proper error handling
+      ws.send(JSON.stringify({ error: 'Invalid message format' }));
     }
   });
   
   ws.on('close', () => {
-    console.log('Client disconnected');
+    // TODO: Add proper logging instead of console.log
   });
 });
 
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-  console.log(`Bowman server running on http://localhost:${PORT}`);
+  // TODO: Add proper logging instead of console.log
+  // Server is now running on port ${PORT}
 });

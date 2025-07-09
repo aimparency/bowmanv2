@@ -65,7 +65,7 @@ const error = ref('');
 const manualPath = ref('');
 
 const supportsDirectoryPicker = computed(() => {
-  return 'showDirectoryPicker' in window;
+  return 'showDirectoryPicker' in window && typeof window.showDirectoryPicker === 'function';
 });
 
 const pickDirectory = async () => {

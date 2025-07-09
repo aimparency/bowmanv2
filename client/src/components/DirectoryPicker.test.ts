@@ -84,8 +84,11 @@ describe('DirectoryPicker', () => {
   });
 
   it('should show fallback message when File System Access API not supported', () => {
-    // Remove the API
-    delete (window as any).showDirectoryPicker;
+    // Mock the API as undefined
+    Object.defineProperty(window, 'showDirectoryPicker', {
+      value: undefined,
+      writable: true
+    });
     
     const wrapper = mount(DirectoryPicker);
     expect(wrapper.find('[data-testid="browser-picker"]').exists()).toBe(false);

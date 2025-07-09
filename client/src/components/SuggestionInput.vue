@@ -48,7 +48,9 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: '',
   disabled: false,
   getSuggestionText: (suggestion: T) => String(suggestion),
-  getSuggestionKey: (suggestion: T, index: number) => index,
+  getSuggestionKey: (_: T) => {
+    return Math.random();
+  },
   maxSuggestions: 7
 });
 
