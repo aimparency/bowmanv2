@@ -1,0 +1,42 @@
+@c1: #f5b; 
+@c2: #3ce; 
+@c3: #2a4;
+
+@error: #d33; 
+@danger: #b31;
+
+@baseBg: #222; 
+
+@mid1: mix(@baseBg, @c1, 60%); 
+@mid2: mix(@baseBg, @c2, 60%); 
+
+@bg1: mix(@baseBg, @c1, 80%); 
+@bg2: mix(@baseBg, @c2, 80%); 
+
+@buttonradius: 0.2rem; 
+@secondaryradius: 0.3rem; 
+
+.clickable {
+  cursor: pointer; 
+  user-select: none; 
+  box-shadow: 0 0 1rem #0008; 
+  &:hover {
+    box-shadow: 0 0 0.5rem #0004; 
+  }
+}
+
+
+.button {
+  border-radius: @buttonradius; 
+  .clickable();
+  display: inline-block; 
+  margin: 0.1rem 0.5rem;
+  line-height: 1.5rem;
+  padding: 0.5rem 1rem; 
+  background-color: shade(@c1, 50%); 
+  vertical-align: middle; 
+  &:focus, &:hover{
+    background-color: shade(@c1, 30%); 
+    outline: none; 
+  }
+}

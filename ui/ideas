@@ -1,0 +1,298 @@
+# pinned
+Ok, these Ide files... how do they work? 
+Well, it's just list of ideas, what we could build next. 
+There are always more ideas than time to realize them. 
+Always go for the most exiting one. 
+The order is reversed chronological. Newer ideas on top: 
+
+#features left
+
+#far future
+- neighbor guard
+  - only how confirmed aims 
+    - if they really have a connection from the stating aim
+  - only load contributing aims 
+    - when a certain token * share threshold is reached
+
+#2022-08-22
+- aim list ordering
+
+#2022-08-21
+- delete connections on chain
+- weight connections by into.r * share when layouting
+- min size of side menu: additionally in rem 
+
+#2022-08-02
+- don't allow flow layouting when not mayNetwork
+- click on handle may select aim
+
+#2022-08-01
+- D: when changin self member: update "permission" field at aim as well.
+- D: errors
+  - V: oben Mitte 
+  - D: unten rechts, wie counterstrike log.
+    - max width 100vw - (side menu width + 3 rem (links) + 2rem rechts) 
+  - D: statt console.error
+- uncommitted changes
+  - lupe>back symbol
+- console.logs loeschen
+- make aims default tab
+
+
+#2022-07-31
+- D: UI Price negatives Vorzeichen raus
+- D: confirmations als Set am aim
+  - D: outflow computed
+- D: flow commit delta
+  - D: calc M on the flow such that handle stays under cursor
+- D: commitment seriality enforcement per commit type
+- feature: list uncommitted changes
+  - maybe in sidebar? 
+  - tabs: 
+    - local search 
+    (- global search )
+    - uncommited changes
+- A: pinned aims should also load fringe (maybe 1 instead of 2?) 
+- A: force should not feel quadratic for aim size
+
+#2022-07-29
+- Towards V0.2 release
+  - outflows computed list
+    - confirmed based on set at aim
+    - compute share (in absolute terms? in ETH?) 
+  - flows position aendern
+    - einzelner flow
+    - weisse handles zeigen 
+      - (unausgefuellte kreise) stroke
+      - linie dazwischen
+  - ongoing transaction indicators
+    - for every area (data, members, loopWeight, ...)  
+  - P(other repo): finance tests
+  - uncommited list 
+    - button with number
+    - on tab close => show dialogue
+      - button discard
+      - links to aims and flows
+      - if dialogue shown close
+
+#2022-07-27
+- Saubere Implementierung vom rekursiven Laden. 
+  - Load
+    - laedt contributors und contributions
+      - um sauber connecten zu koennen
+      - aber laed nicht die neighbor aims
+  - RaiseLevel
+    - laedt die neighbor aims
+
+#2022-07-19
+- edit member button
+  => loads addr and checkings into the form
+  => button reads "change member"
+- button for changing loop weight
+  - extra smart contract function for it 
+- raiseLevel etc. 
+- confirmAims
+  - combine addresses from local knowledge and lazy load indexer info
+
+#2022-07-12
+- check network, lookup contract id. 
+  - If no contract id is present
+    - Confront user, suggest networks that work 
+      - Switch to it
+- If no network info - hint user to change the network
+
+#2022-07-11
+- D: Feedback von David
+  - D(was partially done already): show ETH price when investing or devesting
+  - D: rejection explanation, when trying creating a flow without permissions
+    - Hint, div
+      - position fixed, 
+      - where the mouse pointer 
+        - position left / right, top / button depending on location
+      - width 33%
+      - height variable
+  - D: Auto fill TokenName and Symbol
+    - "can't be changed!"
+- GraphQL auf Polygon
+
+- D: Details
+  - D: Add aim in the middle of the screen 
+  - D: Icon for going back to the List 
+
+#far future backlog
+- next version
+  - git... stuff in git repos packen
+    - git läuft im browser
+    - ein hauptrepo
+    - "dependencies"
+      - lädt andere repos & vergibt alias
+      - aim connections enthalten alias info: also: <repoId>-<aimId>
+        - repo-id 0 ist vielleicht self. 
+    - so kriegt man umsonst
+      - versionskontrolle
+      - off-chain sharing
+    - wenn man die app lädt, 
+      - werden immer automatisch alle repos gepullt 
+        - (ist ja nur text, müsste schnell gehen) 
+      - chains könnten für aim description etc. 
+        - vielleicht auch auf die repos verweisen
+          - repourl/aimId
+          - für alles bis auf investment kram
+          - git als decentral storage so to say
+    - possibilities are huge. There is enough space for all of us. 
+
+#2022-07-06
+- The Graph in neuem branch
+  - load benefitting aims (threshold 2 % eigene Size oder so) 
+  - Full text search 
+    - search in all fields
+- Permissions
+  - Add User
+    - by address
+    - specify role (or..  well a permission 8 bits) 
+  - contract setter
+  - lazy load when selecting 
+
+#2022-07-05
+- remove flows from chain
+
+#2022-07-04
+- D: share links 
+  - display in aim details
+  - load if url parameter is there
+- D: diagonal stripes pattern für unpublished aims and flows. 
+  - svg mask, siehe hier: https://stackoverflow.com/questions/43423317/how-to-change-color-of-svg-pattern-on-usage
+
+#2022-07-03
+- D(was loaded but no weight => NaN path) : Fix: Flow is not being loaded 
+- the Graph? 
+- There is a Bug, that the layout becomes "faster" after "a while" 
+  - It's maybe due to multiple strands of layout functions being executed 
+    - Due to vite hot reloading
+
+
+
+#2022-07-02
+- Connections zwischen gepinnten nodes
+
+#2022-07-01
+Ok, welche features wären mir denn jetzt noch am wichtigsten? 
+- D: pinnen (Local storage array der ids)
+- V(ähnlich, aber erstmal nicht so wichtig): blacklisten (nervige aims blacklisten können) 
+- share aims by link (contains the aim addr) 
+- load flows and recoursively load aims (until a certain distance) 
+  - gestrichelter stroke, wenn die connections eines aims noch nicht geladen werden 
+    loadLevel = 0 oder so
+- D: aim erstellen in einer Transaktion (mit allen werten) 
+  - V(benutze structs): key-value pairs
+  - A: aimData struct
+  - analoges interface für flow creations
+    - dx, dy als float32 als "position" key-value pair
+    - description als string 
+- aims über the graph suchen können
+
+#2022-06-30
+- key-value store
+
+#2022-06-28
+- also doch vielleicht key value store. (wegen solidity's 16 local var limit, string size = 2 slots)
+  - um bequem mit einem Aufruf mehrere felder setzen zu können
+
+#2022-06-27
+- Create Flows onchain
+- Permissions on aimparency fixen
+- Fix bug: token mint on aim creation seems to be broken
+
+#2022-06-24
+- Nodes and Flows you create on chain get pinned automatically
+- Maybe
+  - Nodes and Flows you create locally get stored in an indexedDB
+  - But maybe skip indexedDB and use matrix right away
+
+#2022-06-23
+- createOnChain für beides
+- commit changes nur für die felder
+- buy und sell für token changes
+
+#2022-06-22
+- Now that smart contracts work
+  - reset "origin" on createOnChain
+  - implement change aims
+
+- connections
+  - when loading: buffer until absent aim gets loaded. 
+  - Edit baseAim and automatically load 
+
+- Info LED for aims and flows
+  - red: changes
+  - blue: same as on chain
+
+- Local storage 
+  - store aim addresses locally and load them, when opening the tab again
+    - D: or maybe allow to "pin" aims, that get loaded automatically
+    - and allow to "blacklist" annoying aims (e.g. wide titles) 
+
+- The Graph natürlich (endlich, hat mal wieder länger gedauert ^^) 
+
+
+#2022-06-14
+- Effort in engery umbenennen?
+  - Was ist eine gute Metrik? Gibt es da überhaupt eine Dimension?
+  - Energy... aber z.B. für computation hängt energy davon ab, wie gut die chips sind
+    - schwer zu bemessen
+    - vielleicht lasse ich es einfach weg? effort?
+    - Zeit mag ich nicht, weil es keinen Sinn ergibt, Sachen in Zeit zu messen. 
+
+- Ok, also, ich würde gern... voranschreiten
+  - D: aims speichern on chain
+  - D: aims ändern on chain
+  - dann: subgraph schreiben
+  - dauert alles länger als gedacht. Ist aber so. 
+
+- Layout
+  - vieleicht wäre es gut, wenn es so einen Toleranzbereich gibt, in dem sich nichts verschiebt
+  - Aber eh will ich die dx und dy aus den flows verwenden. 
+
+- D: Flows
+  - D: man soll es sehen, wenn riesenpfeile ... von kleinen Aims abgehen 
+    - V: oder doch: zu kleinen Aims zeigen? flows...
+    - D(contributes to): "depends on" vs. "contributes to"
+  - contributes to ist schöner. Zukunft, in Richtung
+  - kann die Pfeile ja so ändern, dass ich am Ende einen Kreis male "round cap" <<== DAS!
+  - daran erkennt man dann auch ganz schön: so groß müsste das Ziel eigentlich sein!
+  - größe bemisst sich an into-aim
+
+- V(denke, das ist wegen vite hot reload layout restart): Bug fixen
+  - nach langer laufzeit ruckelt es
+  - liegt an stack grow bei "layout" funktion. 
+
+- Performance optimization (layout) 
+  - reuse arrays (except boxes) by accessing indizes instead of push
+  - or maybe even better: try directly (leaving out vue) modifying the svg props. 
+
+- D: removing connections when removing aims
+- "..." anzeigen, wenn ein aim noch keinen Namen hat
+
+# umgekehrt chronologisch
+
+- D(musste get element under point - hack benutzen): connect on touch release
+
+- D: aim layout: die selected Node nicht bewegen :) 
+
+- D: aims connecten / flows anzeigen
+
+- "public" optional machen (hardcode true von mir aus bis zum ico)
+  - nur wenn public auf blockchain veröffentlichen 
+
+- D: Datamodel
+  - connections sind selbstständige objekte
+  - goals haben eingänge und ausgänge
+  - D: connections gehören zum benefitting aim
+    - werden also auf der chain veröffentlicht, wenn das receiving aim öffentlich ist
+
+- D(implemented my own): von gl-vec2 wegwechseln, um mehr precision als Float32 zu haben
+  - D: vielleicht ne eigene kleine lib bauen
+    - add, sub, divN, multN
+    - alles inplace + returning 
+    - clone
+    - operating on {x: number, y: number} 
