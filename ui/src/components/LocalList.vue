@@ -37,7 +37,7 @@ import { defineComponent } from "vue"
 import fuzzysort from 'fuzzysort'
 
 import { useUi } from "../stores/ui"
-import { Aim, useAimNetwork } from "../stores/aim-network"
+import { Aim, useAimNetwork } from "../stores/aim-network-git"
 
 import AimLi from "./AimLi.vue"
 import { useMap } from "../stores/map"

@@ -31,7 +31,7 @@
 import { defineComponent } from "vue"
 
 import { useUi } from "../stores/ui"
-import { useAimNetwork } from "../stores/aim-network"
+import { useAimNetwork } from "../stores/aim-network-git"
 
 import TabbedMenu from "./TabbedMenu.vue"
 import AimDetails from "./AimDetails.vue"

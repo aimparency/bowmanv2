@@ -13,7 +13,7 @@
 import { defineComponent, PropType } from 'vue';
 
 import makeCircularPath from '../make-circular-path';
-import { Flow, useAimNetwork } from '../stores/aim-network';
+import { Flow, useAimNetwork } from '../stores/aim-network-git';
 
 import { useUi } from '../stores/ui'; 
 

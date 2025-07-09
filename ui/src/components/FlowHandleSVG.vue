@@ -23,7 +23,7 @@
 // import Color from 'color'
 import { defineComponent, PropType } from 'vue';
 
-import { Aim, Flow, useAimNetwork } from '../stores/aim-network';
+import { Aim, Flow, useAimNetwork } from '../stores/aim-network-git';
 import { useMap } from '../stores/map';
 
 import * as vec2 from '../vec2';

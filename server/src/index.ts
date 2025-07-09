@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { app } from './app.js';
@@ -27,6 +28,7 @@ wss.on('connection', (ws) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
+  console.log('listening on port', PORT); 
   // TODO: Add proper logging instead of console.log
   // Server is now running on port ${PORT}
 });

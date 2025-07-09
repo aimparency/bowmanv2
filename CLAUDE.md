@@ -76,3 +76,7 @@ npm run test:ui      # Run tests with Vitest UI
 - Search functionality uses Fuse.js for fuzzy matching on aim titles and tags
 - Aim positioning and relationships are calculated using 2D vector mathematics
 - Each repository maintains its own aim graph independent of others
+
+## development servers
+I start the development servers for the bowman local server and the bowman ui. 
+Check the .env file of the server and the vite config of the ui to see which ports. 

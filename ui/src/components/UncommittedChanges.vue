@@ -49,7 +49,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue"
-import { Aim, Flow, useAimNetwork } from '../stores/aim-network'
+import { Aim, Flow, useAimNetwork } from '../stores/aim-network-git'
 import { useMap } from "../stores/map"
 import { useUi } from "../stores/ui";
 

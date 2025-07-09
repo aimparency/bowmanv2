@@ -325,7 +325,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
 
-import { Aim, Member, Flow, useAimNetwork } from "../stores/aim-network"
+import { Aim, Flow, useAimNetwork } from "../stores/aim-network-git"
 
 import MultiSwitch from './MultiSwitch.vue'
 import BigIntSlider from './BigIntSlider.vue'
@@ -334,8 +334,7 @@ import ShortAddress from './ShortAddress.vue'
 import BackButton from './SideBar/BackButton.vue'
 
 import { humanizeAmount } from '../tools'
-import { useWeb3Connection } from "../stores/web3-connection"
-import { ethers } from "ethers"
+import { useApiConnection } from "../stores/api-connection"
 
 interface Trade {
   verb: string, 
@@ -369,33 +368,23 @@ export default defineComponent({
   },
   data() {
     const aimNetwork = useAimNetwork()
-    const w3c = useWeb3Connection()
     return { 
-      aimPermissions: Aim.Permissions, 
       aimNetwork, 
       confirmRemove: false, 
-      confirmTransfer: false, 
-      tokenSliderOrigin: 0n,
       statusOptions: [
         {
-          value: "untouched", 
+          value: "not_reached", 
           color: "#288"
         }, 
         {
-          value: "brewing", 
+          value: "in_progress", 
           color: "#892", 
         }, 
         {
-          value: "wip", 
-          color: "#a74", 
-        }, 
-        { 
-          value: "maintainance", 
-          color: "#56b", 
+          value: "reached", 
+          color: "#4a4", 
         }
       ],
-      nativeCurrency: w3c.nativeCurrency!, 
-      myself: w3c.address,
       justCopiedToClipboard: false,
       permissionGranting: {} as {[key: string]: boolean},
       memberAddr: "", 

@@ -56,7 +56,7 @@ import FlowSVG from './FlowSVG.vue';
 import Connector from './Connector.vue';
 import FlowHandle from './FlowHandleSVG.vue';
 
-import { Aim, Flow, useAimNetwork, randomAimColor, toHexColor } from '../stores/aim-network'
+import { Aim, Flow, useAimNetwork, randomAimColor, toHexColor } from '../stores/aim-network-git'
 import { useMap, LOGICAL_HALF_SIDE } from '../stores/map'
 import { useUi } from '../stores/ui'
 

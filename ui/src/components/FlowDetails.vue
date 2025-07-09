@@ -90,7 +90,7 @@
 import { defineComponent, PropType } from "vue"
 
 import { useUi } from "../stores/ui"
-import { Flow, useAimNetwork } from "../stores/aim-network"
+import { Flow, useAimNetwork } from "../stores/aim-network-git"
 
 import AimLi from "./AimLi.vue"
 import MultiSwitch from './MultiSwitch.vue'

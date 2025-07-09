@@ -29,4 +29,8 @@ inkscape
 *.sln
 *.sw?
 
+.git-backup/
+tracked-files
+
 package-lock.json
+

@@ -7,7 +7,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
 
-import { Aim } from "../stores/aim-network"
+import { Aim } from "../stores/aim-network-git"
 
 export default defineComponent({
   name: "AimLi",

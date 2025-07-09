@@ -8,8 +8,8 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 
-import { useAimNetwork } from "./stores/aim-network"
-import { useWeb3Connection } from "./stores/web3-connection";
+import { useAimNetwork } from "./stores/aim-network-git"
+import { useApiConnection } from "./stores/api-connection";
 import { useUi } from "./stores/ui";
 
 import ConnectionStatus from "./components/ConnectionStatus.vue";
@@ -27,15 +27,18 @@ export default defineComponent({
   },
   data() {
     return {
-      web3Connection: useWeb3Connection(),
+      apiConnection: useApiConnection(),
       aimNetwork: useAimNetwork(),
       ui: useUi(),
     }
   },
   mounted() {
-    this.web3Connection.connect(() => {
+    this.apiConnection.connect().then(() => {
         this.aimNetwork.loadInitial()
-    }) 
+    }).catch(error => {
+        this.ui.log(`Failed to connect to server: ${error}`, "error")
+    })
+    
     const onResize = () => {
       this.ui.setScreenSize(
         window.innerWidth, 
@@ -44,16 +47,18 @@ export default defineComponent({
     }
     window.addEventListener('resize', onResize)
     onResize()
-    window.addEventListener("beforeunload", (e) => {
-      if(this.aimNetwork.allChanges.length > 0) {
-        e.preventDefault()
-        this.ui.promtOnExit()
-        this.aimNetwork.deselect()
-        e.returnValue = "There are uncommmitted changes, that will be lost if you leave this page."
-        return "There are uncommmitted changes, that will be lost if you leave this page."
-      }
-      return null
-    }, true);
+    
+    // TODO: Implement change tracking for git-based system
+    // window.addEventListener("beforeunload", (e) => {
+    //   if(this.aimNetwork.hasUncommittedChanges()) {
+    //     e.preventDefault()
+    //     this.ui.promtOnExit()
+    //     this.aimNetwork.deselect()
+    //     e.returnValue = "There are uncommmitted changes, that will be lost if you leave this page."
+    //     return "There are uncommmitted changes, that will be lost if you leave this page."
+    //   }
+    //   return null
+    // }, true);
   }, 
   methods: {
   },

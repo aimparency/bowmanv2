@@ -11,7 +11,7 @@
 import { defineComponent, PropType } from 'vue';
 
 import makeCircularPath from '../make-circular-path';
-import { Aim } from '../stores/aim-network';
+import { Aim } from '../stores/aim-network-git';
 import { useMap } from '../stores/map';
 
 export default defineComponent({

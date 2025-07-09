@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bowman UI Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background-color: #2a2a2a;
+        }
+        .test-button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background-color: #357abd;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #2d5a2d;
+            border: 1px solid #4a804a;
+        }
+        .error {
+            background-color: #5a2d2d;
+            border: 1px solid #804a4a;
+        }
+        .info {
+            background-color: #2d4a5a;
+            border: 1px solid #4a6a80;
+        }
+        input, textarea {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 5px 0;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bowman UI Test Page</h1>
+        <p>This page tests the git-based Bowman API integration.</p>
+
+        <div class="test-section">
+            <h2>Server Connection Test</h2>
+            <button class="test-button" onclick="testConnection()">Test Server Connection</button>
+            <div id="connection-result" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Repository Setup</h2>
+            <label>Repository Path:</label>
+            <input type="text" id="repo-path" placeholder="/path/to/test/repo" />
+            <label>Root Aim Title:</label>
+            <input type="text" id="root-title" placeholder="My Project Root Aim" />
+            <label>Root Aim Description:</label>
+            <textarea id="root-description" placeholder="This is the main goal of my project"></textarea>
+            <button class="test-button" onclick="initializeRepo()">Initialize Repository</button>
+            <button class="test-button" onclick="setRepo()">Set Repository</button>
+            <div id="repo-result" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Aim Creation Test</h2>
+            <label>Aim Title:</label>
+            <input type="text" id="aim-title" placeholder="New Aim Title" />
+            <label>Aim Description:</label>
+            <textarea id="aim-description" placeholder="Describe your aim"></textarea>
+            <label>Effort (1-10):</label>
+            <input type="number" id="aim-effort" min="1" max="10" value="5" />
+            <label>Tags (comma-separated):</label>
+            <input type="text" id="aim-tags" placeholder="tag1, tag2, tag3" />
+            <button class="test-button" onclick="createAim()">Create Aim</button>
+            <div id="aim-result" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Aim Retrieval Test</h2>
+            <button class="test-button" onclick="getAllAims()">Get All Aims</button>
+            <div id="retrieval-result" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Repository Status</h2>
+            <button class="test-button" onclick="getRepoStatus()">Get Repository Status</button>
+            <div id="status-result" class="test-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8307';
+
+        async function apiRequest(endpoint, options = {}) {
+            const resultDiv = document.getElementById(options.resultId || 'result');
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    return data;
+                } else {
+                    throw new Error(data.error || `Request failed: ${response.status}`);
+                }
+            } catch (error) {
+                if (resultDiv) {
+                    resultDiv.className = 'test-result error';
+                    resultDiv.textContent = `Error: ${error.message}`;
+                }
+                throw error;
+            }
+        }
+
+        async function testConnection() {
+            const resultDiv = document.getElementById('connection-result');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/repo`);
+                const data = await response.json();
+                
+                resultDiv.className = 'test-result success';
+                resultDiv.textContent = `✓ Server is running!\nCurrent repo: ${data.path || 'None'}`;
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `✗ Server connection failed: ${error.message}`;
+            }
+        }
+
+        async function initializeRepo() {
+            const resultDiv = document.getElementById('repo-result');
+            const repoPath = document.getElementById('repo-path').value;
+            const rootTitle = document.getElementById('root-title').value;
+            const rootDescription = document.getElementById('root-description').value;
+
+            if (!repoPath || !rootTitle || !rootDescription) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = '✗ Please fill in all repository fields';
+                return;
+            }
+
+            try {
+                const data = await apiRequest('/api/repo/init', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        path: repoPath,
+                        rootAim: {
+                            title: rootTitle,
+                            description: rootDescription,
+                            effort: 5
+                        }
+                    })
+                });
+
+                resultDiv.className = 'test-result success';
+                resultDiv.textContent = `✓ Repository initialized!\nPath: ${data.path}\nRoot Aim ID: ${data.rootAimId.id}`;
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `✗ Failed to initialize repository: ${error.message}`;
+            }
+        }
+
+        async function setRepo() {
+            const resultDiv = document.getElementById('repo-result');
+            const repoPath = document.getElementById('repo-path').value;
+
+            if (!repoPath) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = '✗ Please enter a repository path';
+                return;
+            }
+
+            try {
+                const data = await apiRequest('/api/repo', {
+                    method: 'POST',
+                    body: JSON.stringify({ path: repoPath })
+                });
+
+                resultDiv.className = 'test-result success';
+                resultDiv.textContent = `✓ Repository set!\nPath: ${data.path}${data.initialized ? '\nRepository was initialized' : ''}`;
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `✗ Failed to set repository: ${error.message}`;
+            }
+        }
+
+        async function createAim() {
+            const resultDiv = document.getElementById('aim-result');
+            const title = document.getElementById('aim-title').value;
+            const description = document.getElementById('aim-description').value;
+            const effort = parseInt(document.getElementById('aim-effort').value);
+            const tagsInput = document.getElementById('aim-tags').value;
+            const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()) : [];
+
+            if (!title || !description) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = '✗ Please fill in title and description';
+                return;
+            }
+
+            try {
+                const data = await apiRequest('/api/aims', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        title,
+                        description,
+                        effort,
+                        tags,
+                        metadata: {
+                            effort,
+                            position: { x: Math.random() * 400, y: Math.random() * 400 }
+                        }
+                    })
+                });
+
+                resultDiv.className = 'test-result success';
+                resultDiv.textContent = `✓ Aim created!\nID: ${data.aimId.id}\nTitle: ${title}`;
+                
+                // Clear the form
+                document.getElementById('aim-title').value = '';
+                document.getElementById('aim-description').value = '';
+                document.getElementById('aim-tags').value = '';
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `✗ Failed to create aim: ${error.message}`;
+            }
+        }
+
+        async function getAllAims() {
+            const resultDiv = document.getElementById('retrieval-result');
+
+            try {
+                const data = await apiRequest('/api/aims');
+
+                resultDiv.className = 'test-result success';
+                let output = `✓ Retrieved ${data.length} aims:\n\n`;
+                
+                data.forEach((aim, index) => {
+                    output += `${index + 1}. ${aim.title}\n`;
+                    output += `   ID: ${aim.id.id}\n`;
+                    output += `   Description: ${aim.description.substring(0, 50)}${aim.description.length > 50 ? '...' : ''}\n`;
+                    output += `   Status: ${aim.status}\n`;
+                    output += `   Tags: ${aim.tags.join(', ') || 'None'}\n`;
+                    output += `   Effort: ${aim.metadata?.effort || 'Not set'}\n\n`;
+                });
+
+                resultDiv.textContent = output;
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `✗ Failed to retrieve aims: ${error.message}`;
+            }
+        }
+
+        async function getRepoStatus() {
+            const resultDiv = document.getElementById('status-result');
+
+            try {
+                const repoData = await apiRequest('/api/repo');
+                const metaData = repoData.path ? await apiRequest('/api/meta') : null;
+
+                resultDiv.className = 'test-result info';
+                let output = `Repository Status:\n\n`;
+                output += `Path: ${repoData.path || 'None'}\n`;
+                
+                if (metaData) {
+                    output += `Repository Name: ${metaData.repository.name}\n`;
+                    output += `Version: ${metaData.version}\n`;
+                    output += `Root Aim ID: ${metaData.rootAimId.id}\n`;
+                    output += `Created: ${new Date(metaData.created).toLocaleString()}\n`;
+                    output += `Last Modified: ${new Date(metaData.lastModified).toLocaleString()}\n`;
+                }
+
+                resultDiv.textContent = output;
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.textContent = `✗ Failed to get repository status: ${error.message}`;
+            }
+        }
+
+        // Auto-test connection on page load
+        window.onload = function() {
+            testConnection();
+        };
+    </script>
+</body>
+</html>

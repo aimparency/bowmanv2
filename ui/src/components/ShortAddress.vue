@@ -9,8 +9,6 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { useWeb3Connection } from '../stores/web3-connection'
-
 export default defineComponent({
   emits: ['update', 'drag-end'],
   props: {
@@ -20,19 +18,17 @@ export default defineComponent({
     }
   },
   data() {
-    let w3c = useWeb3Connection()
     return {
       expanded: false,
-      justCopiedToClipboard: false, 
-      myeself: w3c.address
+      justCopiedToClipboard: false
     }
   },
   computed: {
     shortAddress() {
-      if(this.address == this.myeself) {
-        return 'myself'
+      if (this.address.length <= 12) {
+        return this.address
       }
-      return this.address.substring(0, 6) + '...' + this.address.slice(-4)
+      return this.address.substring(0, 8) + '...' + this.address.slice(-4)
     },
   },
   watch: {

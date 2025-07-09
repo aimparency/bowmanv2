@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 import * as vec2 from '../vec2'
-import { Aim, Flow } from './aim-network'
+import { Aim, Flow } from './aim-network-git'
 
 type maybeAim = undefined | Aim
 
