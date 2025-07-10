@@ -103,7 +103,10 @@ function errorHandler(err: Error, req: express.Request, res: express.Response, n
 
 export const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:8407', 'http://127.0.0.1:8407'],
+  credentials: true
+}));
 app.use(express.json());
 
 interface AimId {

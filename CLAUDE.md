@@ -80,3 +80,5 @@ npm run test:ui      # Run tests with Vitest UI
 ## development servers
 I start the development servers for the bowman local server and the bowman ui. 
 Check the .env file of the server and the vite config of the ui to see which ports. 
+
+use /home/felix/dev/aimparency/bowman-v2/test-repo for puppeteer testing!

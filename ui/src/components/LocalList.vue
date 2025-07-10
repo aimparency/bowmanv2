@@ -66,7 +66,15 @@ export default defineComponent({
   }, 
   computed: {
     searchResults() {
-      return fuzzysort.go(this.search, Object.values(this.aimNetwork.aims), {
+      const aims = Object.values(this.aimNetwork.aims)
+      console.log('LocalList: aims available:', aims.length)
+      
+      if (this.search.trim() === '') {
+        // Return all aims when search is empty
+        return aims.map(aim => ({ obj: aim }))
+      }
+      
+      return fuzzysort.go(this.search, aims, {
         key: "title",
         limit: 100, 
         threshold: -10000,
@@ -82,10 +90,8 @@ export default defineComponent({
       let map = useMap()
       this.aimNetwork.createAndSelectAim(aim => {
         aim.pos = vec2.crNegate(map.offset) 
-        let tR = BigInt(Math.trunc(1000 * 150 / map.scale))
-        tR *= tR
-        aim.setTokens(tR) 
-        aim.tokensOnChain = 0n
+        // Set default radius based on effort
+        aim.setRadius(aim.effort || 5)
       })
     }, 
     selectAim(aim: Aim) {

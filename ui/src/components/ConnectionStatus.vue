@@ -1,24 +1,22 @@
 <template>
-  <div 
-    @click="selectRepository"
-    class="connection-status"
-    :class="{ clickable: !apiConnection.currentRepo }">
-    <h4>bowman server</h4>
-    <p v-if="apiConnection.connected"> status: connected </p>
-    <p v-else class="warning">no connection</p>
-    <p v-if="apiConnection.currentRepo"> repo: {{ repoName }} </p>
-    <p v-else class="warning clickable-hint">no repository - click to select</p>
-    
-    <!-- Hidden file input for directory selection -->
+  <div class="connection-status">
     <input 
-      ref="directoryInput"
-      type="file" 
-      webkitdirectory 
-      directory 
-      multiple
-      style="display: none"
-      @change="handleDirectorySelect"
+      ref="pathInput"
+      type="text" 
+      placeholder="Enter absolute path to repository directory"
+      v-model="repositoryPath"
+      @input="onPathInput"
+      class="path-input"
     />
+    <p v-if="apiConnection.connected && apiConnection.currentRepo" class="status-success">
+      connected - repo found
+    </p>
+    <p v-else-if="apiConnection.connected" class="status-warning">
+      connected - no repo selected
+    </p>
+    <p v-else class="status-error">
+      no connection
+    </p>
   </div>
 </template>
 
@@ -32,6 +30,12 @@ export default defineComponent({
   name: "ConnectionStatus",
   props: {
     msg: String,
+  },
+  data() {
+    return {
+      repositoryPath: '',
+      debounceTimer: null as ReturnType<typeof setTimeout> | null
+    }
   },
   computed: {
     connected() {
@@ -55,62 +59,31 @@ export default defineComponent({
     }
   },
   methods: {
-    selectRepository() {
-      // Only allow selection if no repository is currently set
-      if (!this.apiConnection.currentRepo && this.apiConnection.connected) {
-        const input = this.$refs.directoryInput as HTMLInputElement
-        input.click()
+    onPathInput() {
+      // Clear existing timer
+      if (this.debounceTimer) {
+        clearTimeout(this.debounceTimer)
       }
+      
+      // Set new timer for 500ms debounce
+      this.debounceTimer = setTimeout(() => {
+        this.trySetRepository()
+      }, 500)
     },
 
-    async handleDirectorySelect(event: Event) {
-      const input = event.target as HTMLInputElement
-      const files = input.files
-      
-      if (!files || files.length === 0) {
+    async trySetRepository() {
+      const path = this.repositoryPath.trim()
+      if (!path) {
         return
       }
-
-      // Get the directory path from the first file
-      // We need to extract the directory path, not the file path
-      const firstFile = files[0]
-      const fullPath = firstFile.webkitRelativePath || firstFile.name
       
-      // Extract directory path (everything before the first file)
-      let directoryPath = ''
-      
-      // Try to get the actual directory path
-      if (firstFile.webkitRelativePath) {
-        // webkitRelativePath gives us "folder/subfolder/file.txt"
-        // We want just the base folder path
-        const pathParts = firstFile.webkitRelativePath.split('/')
-        if (pathParts.length > 1) {
-          directoryPath = pathParts[0]
-        }
+      try {
+        await this.setRepository(path)
+      } catch (error) {
+        // Silently handle errors - status will show "no repo selected"
       }
-
-      // For security reasons, browsers don't give us the full absolute path
-      // But we can get the directory name and let the user specify the full path
-      if (directoryPath) {
-        const fullPathInput = prompt(
-          `Selected directory: "${directoryPath}"\n\nPlease enter the full absolute path to this directory:`,
-          `/path/to/${directoryPath}`
-        )
-        
-        if (fullPathInput && fullPathInput.trim()) {
-          await this.setRepository(fullPathInput.trim())
-        }
-      } else {
-        // Fallback: ask user to enter the full path manually
-        const pathInput = prompt('Please enter the full path to your repository directory:')
-        if (pathInput && pathInput.trim()) {
-          await this.setRepository(pathInput.trim())
-        }
-      }
-      
-      // Clear the input for next use
-      input.value = ''
     },
+
 
     async setRepository(path: string) {
       try {
@@ -166,7 +139,8 @@ export default defineComponent({
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         this.ui.log(`Failed to initialize repository: ${errorMessage}`, 'error')
       }
-    }
+    },
+
   }
 });
 </script>
@@ -174,10 +148,6 @@ export default defineComponent({
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="less">
 .connection-status {
-  * {
-    margin: 0.1rem;
-    pointer-events: none; 
-  }
   position: fixed; 
   right: 2rem; 
   top: 2rem; 
@@ -187,6 +157,7 @@ export default defineComponent({
   padding: 1rem; 
   border-radius: 1rem; 
   transition: all 0.2s ease;
+  min-width: 280px;
   
   &:hover {
     opacity: 1; 
@@ -194,26 +165,42 @@ export default defineComponent({
     box-shadow: 0 0 2rem #0008; 
   }
   
-  &.clickable {
-    cursor: pointer;
+  .path-input {
+    width: 100%;
+    padding: 0.5rem;
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
     
-    &:hover {
-      background-color: shade(@mid1, 20%);
-      transform: translateY(-1px);
+    &:focus {
+      outline: none;
+      border-color: #88ccff;
+    }
+    
+    &::placeholder {
+      color: #888;
     }
   }
   
-  .clickable-hint {
-    color: #88ccff !important;
-    font-weight: bold;
-    
-    &:hover {
-      color: #aaddff !important;
-    }
+  .status-success {
+    color: #88ff88;
+    font-size: 0.8rem;
+    margin: 0;
   }
   
-  .warning {
+  .status-warning {
     color: #ffaa88;
+    font-size: 0.8rem;
+    margin: 0;
+  }
+  
+  .status-error {
+    color: #ff6666;
+    font-size: 0.8rem;
+    margin: 0;
   }
 }
 </style>

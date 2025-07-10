@@ -193,8 +193,12 @@ export class Aim {
       aim.pos = vec2.fromValues(apiAim.metadata.position.x, apiAim.metadata.position.y)
     }
     
-    aim.setColor(randomAimColor())
-    aim.setRadius(aim.effort)
+    // Use a fixed visible color for debugging
+    aim.setColor([255, 100, 100]) // Bright red
+    aim.setRadius(aim.effort || 30) // Ensure visible radius
+    
+    // Set loadLevel to make aims visible in the map
+    aim.loadLevel = 1
     
     return aim
   }
