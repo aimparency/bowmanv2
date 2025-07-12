@@ -89,14 +89,23 @@ export default defineComponent({
     Connector, 
     FlowHandle, 
   },
+  setup() {
+    const aimNetwork = useAimNetwork()
+    const map = useMap()
+    const ui = useUi()
+    
+    return {
+      aimNetwork,
+      map,
+      ui
+    }
+  },
   data() {
     return {
       summitPath,
       summitColors,
       summitYs, 
       logicalHalfSide: LOGICAL_HALF_SIDE,
-      aimNetwork: useAimNetwork(),
-      map: useMap(), 
       breakFromAnimLoop: false,
       layoutingHandlePos: vec2.create(),
       reusableLayoutCalcArrays: markRaw({
@@ -375,17 +384,16 @@ export default defineComponent({
         if(this.aimNetwork.selectedAim || this.aimNetwork.selectedFlow) {
           this.aimNetwork.deselect()
         } else {
-          let ui = useUi()
+          let ui = this.ui
           if(ui.sideMenuOpen) {
             ui.sideMenuOpen = false
           } else {
             this.aimNetwork.createAndSelectAim((aim: Aim) => {
               aim.pos = vec2.clone(this.map.mouse.logical)
-              // r * scale soll 100 sein
-              let tR = BigInt(Math.trunc(1000 * 150 / this.map.scale))
-              tR *= tR
-              aim.setTokens(tR)
-              aim.tokensOnChain = 0n
+              // Set effort based on scale for git version
+              let effort = Math.trunc(10 * 150 / this.map.scale)
+              aim.updateEffort(effort)
+              aim.tokens = effort
             })
           }
         }
@@ -402,7 +410,7 @@ export default defineComponent({
   computed: {
     showLayoutHandles() {
       let selectedFlow = this.aimNetwork.selectedFlow
-      return selectedFlow && selectedFlow.into.mayNetwork() && !selectedFlow.transactionPending
+      return selectedFlow && selectedFlow.into.mayNetwork() && !selectedFlow.pending
     }, 
     viewBox() : string {
       return [-1,-1,2,2].map((v: number) => v * LOGICAL_HALF_SIDE).join(' ')

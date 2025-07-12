@@ -46,14 +46,27 @@ export class Aim {
   static nextAimId = 0
   id = Aim.nextAimId++ // auto increment xD
 
+  // Permissions system (blockchain concept, but needed for UI compatibility)
+  static Permissions: {[name: string]: number} = {
+    edit: 0x01, 
+    network: 0x02,
+    manage: 0x04, 
+    transfer: 0x80, 
+  }
+
   // Git-based identifiers
   aimId?: AimId
   repoPath?: string
   pinned: boolean = false
+  
+  // For compatibility with AimSVG component (blockchain concept not used in git version)
+  address?: string
+  permissions: number = 0xFF // All permissions for git-based version
 
   title: string = ""
   description: string = "" 
   status: string = "not_reached"
+  statusNote: string = ""
   effort: number = 0 
   rgb: [number, number, number] = [0, 0, 0]
   assignees: string[] = []
@@ -72,10 +85,23 @@ export class Aim {
   inflows: { [aimId: string]: Flow } = {}
   outflows: { [aimId: string]: Flow } = {}
 
-  // Keep dependency weight concept but remove token economics
-  dependencyWeight = 0x8000 // half of uint16, represents importance/priority
+  // Blockchain-related properties for UI compatibility (unused in git version)
+  tokens: number = 0
+  members: any[] = []
+  pendingTransactions = {
+    transfer: false,
+    creation: false,
+    update: false
+  }
+  contributionConfirmationSwitches = new Map()
+
+  // Keep loop weight concept but remove token economics
+  dependencyWeight = 0x8000 // half of uint16, represents importance/priority (legacy naming)
   dependencyWeightOrigin = undefined as number | undefined
-  dependencyShare = 1
+  dependencyShare = 1 // legacy naming
+  loopWeight: number = 0x8000
+  loopWeightOrigin?: number
+  loopShare: number = 0.5
 
   origin = new AimOrigin()
 
@@ -94,6 +120,33 @@ export class Aim {
     return false
   }
 
+  // For compatibility with AimSVG component
+  anyTransactionPending() {
+    return this.anyOperationPending()
+  }
+
+  // Stub methods for UI compatibility (blockchain concepts)
+  updateTokens(value: number) {
+    this.tokens = value
+  }
+
+
+  mayEdit() {
+    return (this.permissions & Aim.Permissions.edit) > 0
+  }
+
+  mayNetwork() {
+    return (this.permissions & Aim.Permissions.network) > 0
+  }
+
+  mayManage() {
+    return (this.permissions & Aim.Permissions.manage) > 0
+  }
+
+  mayTransfer() {
+    return (this.permissions & Aim.Permissions.transfer) > 0
+  }
+
   constructor() {
   }
 
@@ -107,16 +160,21 @@ export class Aim {
     this.recalcWeights()
   }
 
+  setLoopWeight(v: number) {
+    this.loopWeight = clampFlowWeight(v) 
+    this.recalcWeights()
+  }
+
   recalcWeights() {
     let flows = this.inflows
-    let totalWeight = this.dependencyWeight
+    let totalWeight = this.loopWeight
     for(let key in flows) {
       totalWeight += flows[key].weight
     }
     for(let key in flows) {
       flows[key].share = flows[key].weight / totalWeight
     }
-    this.dependencyShare = this.dependencyWeight / totalWeight
+    this.loopShare = this.loopWeight / totalWeight
   }
 
   setRadius(effort: number) {
@@ -165,6 +223,10 @@ export class Aim {
     this.description = v
   }
 
+  updateStatusNote(v: string) {
+    this.statusNote = v
+  }
+
   updateEffort(v: number) {
     if(v === this.origin.effort) { 
       this.origin.effort = undefined
@@ -175,6 +237,14 @@ export class Aim {
     this.setRadius(v)
   }
 
+  setTokens(value: number) {
+    this.tokens = value
+  }
+
+  updateLoopWeight(value: number) {
+    this.loopWeight = value
+  }
+
   // Convert from API format
   static fromApiAim(apiAim: ApiAim): Aim {
     const aim = new Aim()
@@ -182,6 +252,7 @@ export class Aim {
     aim.title = apiAim.title
     aim.description = apiAim.description
     aim.status = apiAim.status
+    aim.statusNote = apiAim.statusNote || ""
     aim.effort = apiAim.metadata?.effort || 0
     aim.assignees = apiAim.assignees
     aim.tags = apiAim.tags
@@ -209,6 +280,7 @@ export class Aim {
       title: this.title,
       description: this.description,
       status: this.status as 'not_reached' | 'reached',
+      statusNote: this.statusNote,
       assignees: this.assignees,
       tags: this.tags,
       targetDate: this.targetDate,
@@ -284,7 +356,8 @@ export class Flow {
     const flow = new Flow(fromAim, toAim)
     flow.explanation = contrib.explanation
     flow.type = contrib.type
-    flow.weight = contrib.strength
+    // Convert strength (0-1) to weight (integer, default 0x7fff)
+    flow.weight = Math.round((contrib.strength || 0.5) * 0x7fff)
     flow.published = true
     return flow
   }
@@ -296,7 +369,8 @@ export class Flow {
       toAim: this.into.aimId!,
       explanation: this.explanation,
       type: this.type,
-      strength: this.weight,
+      // Convert weight back to strength (0-1)
+      strength: this.weight / 0x7fff,
       metadata: {}
     }
   }
@@ -600,6 +674,76 @@ export const useAimNetwork = defineStore('aim-network', {
       return flows
     },
 
+    // Blockchain-related store methods for UI compatibility (stubs for git version)
+    resetContributionConfirmations(aim: Aim) {
+      // No-op for git version
+    },
+
+    commitLoopWeight(aim: Aim) {
+      // No-op for git version - changes are applied immediately
+      useUi().log("Loop weight saved locally in git repository", "info")
+    },
+
+    buyTokens(aim: Aim, amount: number, price: number) {
+      // No-op for git version
+      useUi().log("Token operations not supported in git version", "info")
+    },
+
+    sellTokens(aim: Aim, amount: number, price: number) {
+      // No-op for git version
+      useUi().log("Token operations not supported in git version", "info")
+    },
+
+    removeAim(aim: Aim) {
+      // Remove from local store
+      delete this.aims[aim.id]
+      if (aim.aimId) {
+        delete this.aimIdToLocalId[aim.aimId.id]
+      }
+      this.selectedAim = undefined
+      useUi().log(`Aim removed locally (not deleted from repository)`, "info")
+    },
+
+    transferAim(aim: Aim, newOwner: string) {
+      // No-op for git version - no ownership system
+      useUi().log("Ownership transfer not supported in git version", "info")
+    },
+
+    resetFlowChanges(flow: Flow) {
+      // No-op for git version - changes are applied immediately
+    },
+
+    commitFlowChanges(flow: Flow) {
+      // No-op for git version - changes are applied immediately
+      useUi().log("Flow changes saved locally in git repository", "info")
+    },
+
+    createFlowOnChain(flow: Flow) {
+      // No-op for git version - flows exist in files, not blockchain
+      useUi().log("Blockchain operations not supported in git version", "info")
+    },
+
+    removeFlow(flow: Flow) {
+      // Remove from local store
+      const fromId = flow.from.id
+      const toId = flow.into.id
+      
+      delete flow.from.outflows[toId]
+      delete flow.into.inflows[fromId]
+      
+      if (this.flows[fromId]) {
+        delete this.flows[fromId][toId]
+      }
+      
+      this.selectedFlow = undefined
+      useUi().log(`Flow removed locally (not deleted from repository)`, "info")
+    },
+
+    allChanges() {
+      // Stub for UI compatibility - git version doesn't track changes the same way
+      return []
+    },
+
     // Repository management
     async initializeRepository(path: string, rootAimData: {
       title: string
@@ -641,6 +785,98 @@ export const useAimNetwork = defineStore('aim-network', {
         useUi().log(`Failed to set repository: ${error}`, "error")
         throw error
       }
+    },
+
+    // Methods called by AimSVG component
+    togglePin(aim: Aim) {
+      aim.pinned = !aim.pinned
+      // TODO: Persist to backend if needed
+    },
+
+    async createAndSelectFlow(from: Aim, to: Aim) {
+      if (!from.aimId || !to.aimId) {
+        useUi().log("Cannot create flow: aims missing repository IDs", "error")
+        return
+      }
+
+      try {
+        const apiConn = useApiConnection()
+        const api = apiConn.getAPI()
+
+        // Create the contribution via API
+        const result = await api.createContribution({
+          fromAim: from.aimId,
+          toAim: to.aimId,
+          explanation: "User-created connection", // Default explanation
+          type: "related", // Default type
+          strength: 0.5, // Default strength
+          metadata: {
+            userCreated: true,
+            created: new Date().toISOString()
+          }
+        })
+
+        if (result.success) {
+          // Create the flow object locally
+          const flow = new Flow(from, to)
+          flow.explanation = "User-created connection"
+          flow.type = "related"
+          flow.weight = 0.5
+          flow.published = true
+
+          // Add to store
+          if (!this.flows[from.id]) {
+            this.flows[from.id] = {}
+          }
+          this.flows[from.id][to.id] = flow
+
+          // Add to aim inflows/outflows
+          from.outflows[to.id] = flow
+          to.inflows[from.id] = flow
+
+          // Select the new flow
+          this.selectedFlow = flow
+          this.selectedAim = undefined
+
+          // Recalculate weights
+          from.recalcWeights()
+          to.recalcWeights()
+
+          useUi().log(`Created connection from ${from.title} to ${to.title}`, "success")
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        useUi().log(`Failed to create connection: ${errorMessage}`, "error")
+      }
+    },
+
+
+    deselect() {
+      this.selectedAim = undefined
+      this.selectedFlow = undefined
+    },
+
+    // Blockchain-related methods for UI compatibility (stubs for git version)
+    resetAimChanges(aim: Aim) {
+      // No-op for git version - changes are applied immediately
+    },
+
+    createAimOnChain(aim: Aim) {
+      // No-op for git version - aims exist in files, not blockchain
+      useUi().log("Blockchain operations not supported in git version", "info")
+    },
+
+    commitAimChanges(aim: Aim) {
+      // No-op for git version - changes are applied immediately
+      useUi().log("Changes saved locally in git repository", "info")
+    },
+
+    commitAimMemberChanges(aim: Aim) {
+      // No-op for git version - no member system
+    },
+
+    commitContributionConfirmations(aim: Aim) {
+      // No-op for git version - no confirmation system
     }
   }
 })

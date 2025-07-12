@@ -460,6 +460,80 @@ app.post('/api/aims/search', asyncHandler(async (req: express.Request, res: expr
   res.json(result);
 }));
 
+// Create a new contribution
+app.post('/api/contributions', asyncHandler(async (req: express.Request, res: express.Response) => {
+  if (!currentRepo) {
+    throw new BowmanError('No repository selected', 400, 'NO_REPO_SELECTED');
+  }
+
+  const { fromAim, toAim, explanation, type, strength, metadata } = req.body;
+
+  // Validate required fields
+  if (!fromAim || !fromAim.id) {
+    throw new BowmanError('fromAim is required', 400, 'INVALID_CONTRIBUTION');
+  }
+  if (!toAim || !toAim.id) {
+    throw new BowmanError('toAim is required', 400, 'INVALID_CONTRIBUTION');
+  }
+  if (!explanation || typeof explanation !== 'string') {
+    throw new BowmanError('explanation is required', 400, 'INVALID_CONTRIBUTION');
+  }
+  if (!type || !['prerequisite', 'enables', 'supports', 'related'].includes(type)) {
+    throw new BowmanError('type must be one of: prerequisite, enables, supports, related', 400, 'INVALID_CONTRIBUTION');
+  }
+  if (strength === undefined || typeof strength !== 'number' || strength < 0 || strength > 1) {
+    throw new BowmanError('strength must be a number between 0 and 1', 400, 'INVALID_CONTRIBUTION');
+  }
+
+  const fromAimId = validateAimId(fromAim.id);
+  const toAimId = validateAimId(toAim.id);
+
+  // Check that both aims exist
+  const fromAimPath = join(currentRepo, '.quiver', 'aims', `${fromAimId}.json`);
+  const toAimPath = join(currentRepo, '.quiver', 'aims', `${toAimId}.json`);
+  
+  if (!existsSync(fromAimPath)) {
+    throw new BowmanError(`From aim ${fromAimId} does not exist`, 404, 'AIM_NOT_FOUND');
+  }
+  if (!existsSync(toAimPath)) {
+    throw new BowmanError(`To aim ${toAimId} does not exist`, 404, 'AIM_NOT_FOUND');
+  }
+
+  const now = new Date().toISOString();
+  
+  // Create the contribution object
+  const contribution = {
+    fromAim,
+    toAim,
+    explanation,
+    type,
+    strength,
+    created: now,
+    metadata: metadata || {}
+  };
+
+  // Create directory structure for contributions
+  const fromContribPath = join(currentRepo, '.quiver', 'contributions', fromAimId, 'to');
+  const toContribPath = join(currentRepo, '.quiver', 'contributions', toAimId, 'from');
+  
+  await fs.mkdir(fromContribPath, { recursive: true });
+  await fs.mkdir(toContribPath, { recursive: true });
+
+  // Write the full contribution to the 'from' directory of the target aim
+  const fullContribFile = join(toContribPath, `${fromAimId}.json`);
+  await fs.writeFile(fullContribFile, JSON.stringify(contribution, null, 2));
+
+  // Write a reference to the 'to' directory of the source aim
+  const reference = {
+    targetAim: toAim,
+    title: explanation // Store title for quick reference
+  };
+  const refContribFile = join(fromContribPath, `${toAimId}.json`);
+  await fs.writeFile(refContribFile, JSON.stringify(reference, null, 2));
+
+  res.json({ success: true, contribution });
+}));
+
 // Add error handling middleware
 app.use(errorHandler);
 

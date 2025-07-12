@@ -33,7 +33,7 @@ export default defineComponent({
   },
   data() {
     return {
-      repositoryPath: '',
+      repositoryPath: import.meta.env.DEV ? '/home/felix/dev/aimparency/bowman-v2/test-repo' : '',
       debounceTimer: null as ReturnType<typeof setTimeout> | null
     }
   },
@@ -141,6 +141,35 @@ export default defineComponent({
       }
     },
 
+    async waitForServerAndConnect() {
+      // Wait for server connection to be established
+      let attempts = 0
+      const maxAttempts = 20 // 10 seconds max
+      
+      while (attempts < maxAttempts) {
+        if (this.apiConnection.connected && !this.apiConnection.currentRepo) {
+          // Server is connected and no repo is set, try connecting
+          await this.trySetRepository()
+          return
+        }
+        
+        if (this.apiConnection.currentRepo) {
+          // Already has a repo, no need to auto-connect
+          return
+        }
+        
+        // Wait 500ms before trying again
+        await new Promise(resolve => setTimeout(resolve, 500))
+        attempts++
+      }
+    }
+
+  },
+  mounted() {
+    // Auto-connect to test-repo in development mode after server is ready
+    if (import.meta.env.DEV && this.repositoryPath) {
+      this.waitForServerAndConnect()
+    }
   }
 });
 </script>

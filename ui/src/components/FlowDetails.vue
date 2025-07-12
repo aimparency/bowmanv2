@@ -74,7 +74,7 @@
           @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
       </div>
       <div 
-        :class="{deactivated: !flow.transactionPending}"
+        :class="{deactivated: !flow.pending}"
         class=overlay />
     </div>
     <div class="scrollspace"></div>

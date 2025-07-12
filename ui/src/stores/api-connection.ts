@@ -116,6 +116,10 @@ export class BowmanAPI {
     return this.request('/api/tags');
   }
 
+  async getTags(): Promise<{ name: string; count: number }[]> {
+    return this.getAllTags();
+  }
+
   async searchAims(filters: {
     text?: string;
     tags?: string[];
