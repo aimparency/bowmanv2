@@ -86,14 +86,16 @@
           @keypress.space.prevent.stop="reset"
           @click="reset">Reset</div>
         <div 
-          v-if="dirty"
+          v-if="dirty || isDirty || isSaving"
           class='button'
-          :class="{ 'saving': isSaving, 'disabled': Object.keys(validationErrors).length > 0 }"
+          :class="{ 'saving': isSaving, 'auto-saved': !isDirty && !isSaving, 'disabled': Object.keys(validationErrors).length > 0 }"
           tabindex="0"
           @keypress.enter.prevent.stop="commitChanges"
           @keypress.space.prevent.stop="commitChanges"
           @click="commitChanges">
-          {{ isSaving ? 'Saving...' : 'Save' }}
+          <span v-if="isSaving">Saving...</span>
+          <span v-else-if="isDirty">Save now</span>
+          <span v-else>✓ Auto-saved</span>
         </div>
         <div
           tabindex="0"  
@@ -168,6 +170,7 @@
 <script lang="ts">
 import { defineComponent, PropType, computed, ref } from "vue"
 import { Aim, Flow, useAimNetwork } from "../stores/aim-network-git"
+import { useAutoSave } from "../composables/useAutoSave"
 import TagInput from './TagInput.vue'
 import Slider from './Slider.vue'
 import BackButton from './SideBar/BackButton.vue'
@@ -196,12 +199,18 @@ export default defineComponent({
     const confirmRemove = ref(false)
     const newAssignee = ref("")
     const validationErrors = ref<{ [key: string]: string }>({})
-    const isSaving = ref(false)
+    
+    // Auto-save functionality
+    const { isSaving, isDirty, debouncedSave, saveImmediately } = useAutoSave(async () => {
+      if (!props.aim.aimId) return // Only save if aim has been saved to repo
+      await aimNetwork.updateAim(props.aim)
+    }, { delay: 1000 })
     
     const aimTags = computed({
       get: () => props.aim.tags || [],
       set: (tags: string[]) => {
         props.aim.tags = tags
+        debouncedSave() // Trigger auto-save when tags change
       }
     })
 
@@ -211,7 +220,10 @@ export default defineComponent({
       newAssignee,
       aimTags,
       validationErrors,
-      isSaving
+      isSaving,
+      isDirty,
+      debouncedSave,
+      saveImmediately
     }
   },
   computed: {
@@ -256,18 +268,21 @@ export default defineComponent({
     toggleStatus(event: Event) {
       const checked = (event.target as HTMLInputElement).checked
       this.aim.updateStatus(checked ? 'reached' : 'not_reached')
+      this.debouncedSave()
     },
 
     updateTitle(e: Event) {
       const v = (e.target as HTMLTextAreaElement).value
       this.validateTitle(v)
-      this.aim.updateTitle(v) 
+      this.aim.updateTitle(v)
+      this.debouncedSave()
     }, 
     
     updateDescription(e: Event) {
       const v = (e.target as HTMLTextAreaElement).value
       this.validateDescription(v)
       this.aim.updateDescription(v)
+      this.debouncedSave()
     },
     
     validateTitle(title: string) {
@@ -303,6 +318,7 @@ export default defineComponent({
     updateStatusNote(e: Event) {
       const v = (e.target as HTMLTextAreaElement).value
       this.aim.updateStatusNote(v)
+      this.debouncedSave()
     },
 
     updateTags(tags: string[]) {
@@ -311,6 +327,7 @@ export default defineComponent({
 
     updateLoopWeight(v: number) {
       this.aim.updateLoopWeight(v)
+      this.debouncedSave()
     },
 
     addAssignee() {
@@ -320,6 +337,7 @@ export default defineComponent({
       if (!this.validationErrors.assignee && assignee) {
         this.aim.assignees.push(assignee)
         this.newAssignee = ""
+        this.debouncedSave()
       }
     },
 
@@ -327,6 +345,7 @@ export default defineComponent({
       const index = this.aim.assignees.indexOf(assignee)
       if (index > -1) {
         this.aim.assignees.splice(index, 1)
+        this.debouncedSave()
       }
     },
     
@@ -335,25 +354,8 @@ export default defineComponent({
     }, 
     
     async commitChanges() {
-      if (!this.dirty) return
-      
-      // Validate all fields before saving
-      this.validateTitle(this.aim.title)
-      this.validateDescription(this.aim.description)
-      
-      if (Object.keys(this.validationErrors).length > 0) {
-        return // Don't save if there are validation errors
-      }
-      
-      try {
-        this.isSaving = true
-        await this.aimNetwork.commitAimChanges(this.aim)
-      } catch (error) {
-        console.error('Failed to save changes:', error)
-        // Could add a toast notification here
-      } finally {
-        this.isSaving = false
-      }
+      // Use the immediate save from auto-save
+      this.saveImmediately()
     }, 
     
     flowClick(flow: Flow) {
@@ -422,6 +424,11 @@ export default defineComponent({
     &.saving {
       background-color: #4a9eff;
       cursor: wait;
+    }
+    
+    &.auto-saved {
+      background-color: #4a9e4a;
+      cursor: default;
     }
     
     &.remove-button {

@@ -230,7 +230,16 @@ export default defineComponent({
     }
 
     const endLayout = () => {
-      this.map.layouting = false; 
+      this.map.layouting = false;
+      
+      // Auto-save flow changes when layout ends (relative positioning changed)
+      if (this.map.layoutCandidate?.flow && this.aimNetwork.selectedFlow) {
+        // Use a small delay to allow final positioning to settle
+        setTimeout(() => {
+          this.aimNetwork.commitFlowChanges(this.aimNetwork.selectedFlow!)
+        }, 100)
+      }
+      
       delete this.map.layoutCandidate;
     }
 

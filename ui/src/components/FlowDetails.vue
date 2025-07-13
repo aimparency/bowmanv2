@@ -53,15 +53,20 @@
             @keypress.space.prevent.stop="create"
             @click="create">create flow on chain</div>
         </span>
-        <span v-else-if='dirty'>
-          <div class='button' tabindex="0" v-if='dirty' 
+        <span v-else-if='dirty || isDirty || isSaving'>
+          <div class='button' tabindex="0" v-if='dirty || isDirty' 
             @keypress.enter.prevent.stop="reset"
             @keypress.space.prevent.stop="reset"
             @click="reset">reset</div>
-          <div class='button' tabindex="0" v-if='dirty' 
+          <div class='button' tabindex="0"
+            :class="{ 'saving': isSaving, 'auto-saved': !isDirty && !isSaving }"
             @keypress.enter.prevent.stop="commit"
             @keypress.space.prevent.stop="commit"
-            @click="commit">commit changes</div>
+            @click="commit">
+            <span v-if="isSaving">Saving...</span>
+            <span v-else-if="isDirty">Save now</span>
+            <span v-else>✓ Auto-saved</span>
+          </div>
         </span>
         <div
           v-if="!flow.published"
@@ -87,10 +92,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue"
+import { defineComponent, PropType, ref } from "vue"
 
 import { useUi } from "../stores/ui"
 import { Flow, useAimNetwork } from "../stores/aim-network-git"
+import { useAutoSave } from "../composables/useAutoSave"
 
 import AimLi from "./AimLi.vue"
 import MultiSwitch from './MultiSwitch.vue'
@@ -111,13 +117,25 @@ export default defineComponent({
       required: true
     }
   },
-  data() {
+  setup(props) {
     const aimNetwork = useAimNetwork()
     const ui = useUi()
+    const confirmRemove = ref(false)
+    
+    // Auto-save functionality for flows
+    const { isSaving, isDirty, debouncedSave, saveImmediately } = useAutoSave(async () => {
+      if (!props.flow.from.aimId || !props.flow.into.aimId) return
+      await aimNetwork.commitFlowChanges(props.flow)
+    }, { delay: 1000 })
+    
     return { 
       aimNetwork, 
       ui, 
-      confirmRemove: false, 
+      confirmRemove,
+      isSaving,
+      isDirty,
+      debouncedSave,
+      saveImmediately
     }
   }, 
   mounted() {
@@ -144,12 +162,13 @@ export default defineComponent({
     }, 
     updateWeight(v: number) {
       this.flow.updateWeight(v)
+      this.debouncedSave()
     }, 
     reset() {
       this.aimNetwork.resetFlowChanges(this.flow)
     }, 
     commit() {
-      this.aimNetwork.commitFlowChanges(this.flow) 
+      this.saveImmediately()
     }, 
     create() {
       this.aimNetwork.createFlowOnChain(this.flow) 
@@ -167,6 +186,7 @@ export default defineComponent({
     updateExplanation(e: Event) {
       const v = (<HTMLTextAreaElement>e.target).value
       this.flow.updateExplanation(v)
+      this.debouncedSave()
     }, 
   }, 
 });
@@ -187,6 +207,14 @@ export default defineComponent({
       text-align: left; 
       display: block; 
       margin: 1rem; 
+    }
+    &.saving {
+      background-color: #4a9eff;
+      cursor: wait;
+    }
+    &.auto-saved {
+      background-color: #4a9e4a;
+      cursor: default;
     }
   }
   .relativePositionHint {
