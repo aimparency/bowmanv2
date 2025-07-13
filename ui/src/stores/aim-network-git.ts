@@ -366,6 +366,21 @@ export class Flow {
     // Convert strength (0-1) to weight (integer, default 0x7fff)
     flow.weight = Math.round((contrib.strength || 0.5) * 0x7fff)
     flow.published = true
+    
+    // Load relative positioning from metadata
+    if (contrib.metadata?.relativeDelta) {
+      const rd = contrib.metadata.relativeDelta
+      if (typeof rd.x === 'number' && typeof rd.y === 'number') {
+        flow.relativeDelta = vec2.fromValues(rd.x, rd.y)
+      }
+    }
+    
+    // If no relative positioning stored, calculate default based on aim positions
+    if (!flow.relativeDelta || (flow.relativeDelta[0] === 0 && flow.relativeDelta[1] === 0)) {
+      const rSum = fromAim.r + toAim.r
+      flow.relativeDelta = vec2.crScale(vec2.crSub(toAim.pos, fromAim.pos), 1 / rSum)
+    }
+    
     return flow
   }
 
@@ -378,7 +393,12 @@ export class Flow {
       type: this.type,
       // Convert weight back to strength (0-1)
       strength: this.weight / 0x7fff,
-      metadata: {}
+      metadata: {
+        relativeDelta: {
+          x: this.relativeDelta[0],
+          y: this.relativeDelta[1]
+        }
+      }
     }
   }
 }
@@ -868,8 +888,10 @@ export const useAimNetwork = defineStore('aim-network', {
     },
 
     commitFlowChanges(flow: Flow) {
-      // No-op for git version - changes are applied immediately
-      useUi().log("Flow changes saved locally in git repository", "info")
+      // TODO: Implement contribution updates with relative positioning in API
+      // For now, clear the origin to mark as committed locally
+      flow.clearOrigin()
+      useUi().log("Flow changes saved locally (API update not yet implemented)", "info")
     },
 
     createFlowOnChain(flow: Flow) {
@@ -963,6 +985,10 @@ export const useAimNetwork = defineStore('aim-network', {
         const apiConn = useApiConnection()
         const api = apiConn.getAPI()
 
+        // Calculate initial relative positioning
+        const rSum = from.r + to.r
+        const relativeDelta = vec2.crScale(vec2.crSub(to.pos, from.pos), 1 / rSum)
+
         // Create the contribution via API
         const result = await api.createContribution({
           fromAim: from.aimId,
@@ -972,7 +998,11 @@ export const useAimNetwork = defineStore('aim-network', {
           strength: 0.5, // Default strength
           metadata: {
             userCreated: true,
-            created: new Date().toISOString()
+            created: new Date().toISOString(),
+            relativeDelta: {
+              x: relativeDelta[0],
+              y: relativeDelta[1]
+            }
           }
         })
 
@@ -981,8 +1011,9 @@ export const useAimNetwork = defineStore('aim-network', {
           const flow = new Flow(from, to)
           flow.explanation = "User-created connection"
           flow.type = "related"
-          flow.weight = 0.5
+          flow.weight = Math.round(0.5 * 0x7fff) // Convert strength to weight
           flow.published = true
+          flow.relativeDelta = vec2.clone(relativeDelta)
 
           // Add to store
           if (!this.flows[from.id]) {
