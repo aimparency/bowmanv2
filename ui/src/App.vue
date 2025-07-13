@@ -3,6 +3,7 @@
   <ConnectionStatus/>
   <SideBar/>
   <Log/>
+  <NotificationToast/>
 </template>
 
 <script lang="ts">
@@ -11,11 +12,13 @@ import { defineComponent } from "vue";
 import { useAimNetwork } from "./stores/aim-network-git"
 import { useApiConnection } from "./stores/api-connection";
 import { useUi } from "./stores/ui";
+import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 
 import ConnectionStatus from "./components/ConnectionStatus.vue";
 import Map from "./components/Map.vue";
 import SideBar from "./components/SideBar.vue";
 import Log from "./components/Log.vue";
+import NotificationToast from "./components/NotificationToast.vue";
 
 export default defineComponent({
   name: "App",
@@ -23,7 +26,8 @@ export default defineComponent({
     ConnectionStatus, 
     Map,
     SideBar,
-    Log
+    Log,
+    NotificationToast
   },
   data() {
     return {

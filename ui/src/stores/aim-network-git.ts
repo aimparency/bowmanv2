@@ -7,6 +7,7 @@ import type { Aim as ApiAim, AimId, Contribution, Meta } from './api-connection'
 
 import { useMap } from './map'
 import { useUi } from './ui'
+import { useNotifications } from './notifications'
 
 import * as vec2 from '../vec2'
 import { markRaw } from 'vue'
@@ -394,6 +395,10 @@ export const useAimNetwork = defineStore('aim-network', {
       aimIdToLocalId: markRaw({}) as {[aimId: string]: number},
       currentRepo: null as string | null,
       meta: null as Meta | null,
+      // Caching and performance
+      lastRepoLoad: null as number | null,
+      loadingRepo: false,
+      contributionsCache: markRaw({}) as { [aimId: string]: { timestamp: number, data: any } }
     }
   }, 
   actions: {
@@ -407,6 +412,16 @@ export const useAimNetwork = defineStore('aim-network', {
     },
 
     async loadRepository(repoPath: string) {
+      // Prevent multiple simultaneous loads
+      if (this.loadingRepo) return
+      
+      // Check if we've recently loaded this repo
+      const now = Date.now()
+      if (this.currentRepo === repoPath && this.lastRepoLoad && (now - this.lastRepoLoad) < 30000) {
+        return // Don't reload if loaded within last 30 seconds
+      }
+
+      this.loadingRepo = true
       const apiConn = useApiConnection()
       const api = apiConn.getAPI()
       
@@ -414,6 +429,7 @@ export const useAimNetwork = defineStore('aim-network', {
         // Load repository metadata
         this.meta = await api.getMeta()
         this.currentRepo = repoPath
+        this.lastRepoLoad = now
         
         // Load all aims
         const apiAims = await api.getAllAims()
@@ -446,12 +462,30 @@ export const useAimNetwork = defineStore('aim-network', {
           }
         }
         
+        useNotifications().success(`Repository loaded: ${this.meta.repository.name}`)
       } catch (error) {
-        useUi().log(`Failed to load repository: ${error}`, "error")
+        console.error('Failed to load repository:', error)
+        useNotifications().error(`Failed to load repository: ${error instanceof Error ? error.message : error}`)
+      } finally {
+        this.loadingRepo = false
       }
     },
 
     async loadAimContributions(aim: Aim) {
+      if (!aim.aimId) return
+      
+      // Check cache first
+      const cacheKey = aim.aimId.id
+      const cached = this.contributionsCache[cacheKey]
+      const now = Date.now()
+      const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes
+      
+      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+        // Use cached data
+        this.loadContributionsFromCache(aim, cached.data)
+        return
+      }
+
       const apiConn = useApiConnection()
       const api = apiConn.getAPI()
       
@@ -500,9 +534,60 @@ export const useAimNetwork = defineStore('aim-network', {
         }
         
         aim.recalcWeights()
+        
+        // Cache the results
+        this.contributionsCache[cacheKey] = {
+          timestamp: now,
+          data: { incomingContribs, outgoingContribs }
+        }
+        
       } catch (error) {
-        useUi().log(`Failed to load contributions for aim: ${error}`, "error")
+        console.error(`Failed to load contributions for aim ${aim.aimId?.id}:`, error)
+        useNotifications().error(`Failed to load connections for "${aim.title}"`)
       }
+    },
+
+    loadContributionsFromCache(aim: Aim, cachedData: any) {
+      const { incomingContribs, outgoingContribs } = cachedData
+      
+      // Process incoming contributions
+      for (const contrib of incomingContribs) {
+        if (!contrib.fromAim || !contrib.fromAim.id) continue
+        
+        const fromAimId = this.aimIdToLocalId[contrib.fromAim.id]
+        const fromAim = this.aims[fromAimId]
+        
+        if (fromAim) {
+          const flow = Flow.fromApiContribution(contrib, fromAim, aim)
+          aim.inflows[fromAimId] = flow
+          
+          if (!this.flows[fromAimId]) {
+            this.flows[fromAimId] = {}
+          }
+          this.flows[fromAimId][aim.id] = flow
+        }
+      }
+      
+      // Process outgoing contributions
+      for (const contrib of outgoingContribs) {
+        if (!contrib.toAim || !contrib.toAim.id) continue
+        
+        const toAimId = this.aimIdToLocalId[contrib.toAim.id]
+        const toAim = this.aims[toAimId]
+        
+        if (toAim) {
+          const flow = Flow.fromApiContribution(contrib, aim, toAim)
+          aim.outflows[toAimId] = flow
+          
+          if (!this.flows[aim.id]) {
+            this.flows[aim.id] = {}
+          }
+          this.flows[aim.id][toAimId] = flow
+        }
+      }
+      
+      // Recalculate weights
+      aim.recalcWeights()
     },
 
     async createAim(aimData: {
@@ -842,11 +927,11 @@ export const useAimNetwork = defineStore('aim-network', {
           from.recalcWeights()
           to.recalcWeights()
 
-          useUi().log(`Created connection from ${from.title} to ${to.title}`, "success")
+          useNotifications().success(`Created connection from "${from.title}" to "${to.title}"`)
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        useUi().log(`Failed to create connection: ${errorMessage}`, "error")
+        useNotifications().error(`Failed to create connection: ${errorMessage}`)
       }
     },
 

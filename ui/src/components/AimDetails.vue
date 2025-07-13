@@ -12,7 +12,9 @@
         placeholder="Aim title"
         :disabled="!mayEdit"
         :value="aim.title"
+        :class="{ 'error': validationErrors.title }"
         @input="updateTitle"></textarea>
+      <div v-if="validationErrors.title" class="error-message">{{ validationErrors.title }}</div>
       
       <textarea
         ref='description'
@@ -21,7 +23,9 @@
         placeholder="Aim description"
         :disabled="!mayEdit"
         :value="aim.description"
+        :class="{ 'error': validationErrors.description }"
         @input="updateDescription"></textarea>
+      <div v-if="validationErrors.description" class="error-message">{{ validationErrors.description }}</div>
 
       <div class="status-section">
         <label class="status-toggle">
@@ -59,10 +63,13 @@
             v-model="newAssignee"
             placeholder="Add assignee"
             @keydown.enter="addAssignee"
+            @input="() => delete validationErrors.assignee"
             class="assignee-input"
+            :class="{ 'error': validationErrors.assignee }"
           />
           <button @click="addAssignee" class="add-button">Add</button>
         </div>
+        <div v-if="validationErrors.assignee" class="error-message">{{ validationErrors.assignee }}</div>
       </div>
 
       <TagInput 
@@ -81,10 +88,13 @@
         <div 
           v-if="dirty"
           class='button'
+          :class="{ 'saving': isSaving, 'disabled': Object.keys(validationErrors).length > 0 }"
           tabindex="0"
           @keypress.enter.prevent.stop="commitChanges"
           @keypress.space.prevent.stop="commitChanges"
-          @click="commitChanges">Save</div>
+          @click="commitChanges">
+          {{ isSaving ? 'Saving...' : 'Save' }}
+        </div>
         <div
           tabindex="0"  
           class='button remove-button' 
@@ -170,6 +180,8 @@ export default defineComponent({
     const aimNetwork = useAimNetwork()
     const confirmRemove = ref(false)
     const newAssignee = ref("")
+    const validationErrors = ref<{ [key: string]: string }>({})
+    const isSaving = ref(false)
     
     const aimTags = computed({
       get: () => props.aim.tags || [],
@@ -182,7 +194,9 @@ export default defineComponent({
       aimNetwork,
       confirmRemove,
       newAssignee,
-      aimTags
+      aimTags,
+      validationErrors,
+      isSaving
     }
   },
   computed: {
@@ -231,12 +245,44 @@ export default defineComponent({
 
     updateTitle(e: Event) {
       const v = (e.target as HTMLTextAreaElement).value
+      this.validateTitle(v)
       this.aim.updateTitle(v) 
     }, 
     
     updateDescription(e: Event) {
       const v = (e.target as HTMLTextAreaElement).value
+      this.validateDescription(v)
       this.aim.updateDescription(v)
+    },
+    
+    validateTitle(title: string) {
+      if (!title.trim()) {
+        this.validationErrors.title = 'Title is required'
+      } else if (title.length > 200) {
+        this.validationErrors.title = 'Title too long (max 200 characters)'
+      } else {
+        delete this.validationErrors.title
+      }
+    },
+    
+    validateDescription(description: string) {
+      if (description.length > 2000) {
+        this.validationErrors.description = 'Description too long (max 2000 characters)'
+      } else {
+        delete this.validationErrors.description
+      }
+    },
+    
+    validateAssignee(assignee: string) {
+      if (!assignee.trim()) {
+        this.validationErrors.assignee = 'Assignee cannot be empty'
+      } else if (assignee.length > 100) {
+        this.validationErrors.assignee = 'Assignee name too long (max 100 characters)'
+      } else if (this.aim.assignees.includes(assignee)) {
+        this.validationErrors.assignee = 'Assignee already exists'
+      } else {
+        delete this.validationErrors.assignee
+      }
     }, 
 
     updateStatusNote(e: Event) {
@@ -250,7 +296,9 @@ export default defineComponent({
 
     addAssignee() {
       const assignee = this.newAssignee.trim()
-      if (assignee && !this.aim.assignees.includes(assignee)) {
+      this.validateAssignee(assignee)
+      
+      if (!this.validationErrors.assignee && assignee) {
         this.aim.assignees.push(assignee)
         this.newAssignee = ""
       }
@@ -267,9 +315,25 @@ export default defineComponent({
       this.aimNetwork.resetAimChanges(this.aim)
     }, 
     
-    commitChanges() {
-      if(this.dirty) {
-        this.aimNetwork.commitAimChanges(this.aim) 
+    async commitChanges() {
+      if (!this.dirty) return
+      
+      // Validate all fields before saving
+      this.validateTitle(this.aim.title)
+      this.validateDescription(this.aim.description)
+      
+      if (Object.keys(this.validationErrors).length > 0) {
+        return // Don't save if there are validation errors
+      }
+      
+      try {
+        this.isSaving = true
+        await this.aimNetwork.commitAimChanges(this.aim)
+      } catch (error) {
+        console.error('Failed to save changes:', error)
+        // Could add a toast notification here
+      } finally {
+        this.isSaving = false
       }
     }, 
     
@@ -327,8 +391,18 @@ export default defineComponent({
     border-radius: 0.25rem;
     cursor: pointer;
     
-    &:hover {
+    &:hover:not(.disabled) {
       background-color: #666;
+    }
+    
+    &.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    &.saving {
+      background-color: #4a9eff;
+      cursor: wait;
     }
     
     &.remove-button {
@@ -338,6 +412,12 @@ export default defineComponent({
         background-color: #c44;
       }
     }
+  }
+
+  .error-message {
+    color: #ff6b6b;
+    font-size: 0.8rem;
+    margin: 0.25rem 0;
   }
 
   .status-section {
@@ -452,7 +532,12 @@ export default defineComponent({
     border-radius: 0.25rem;
     padding: 0.5rem;
     margin-bottom: 0.5rem;
-    resize: vertical; 
+    resize: vertical;
+    
+    &.error {
+      border-color: #ff6b6b;
+      background-color: #553;
+    }
   }
 
   textarea::placeholder, input::placeholder {

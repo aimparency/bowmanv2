@@ -148,11 +148,26 @@ export default defineComponent({
         }
       }
     },
-    callCreateFlow(from: Aim, to: Aim) {
+    async callCreateFlow(from: Aim, to: Aim) {
+      // Validate connection
+      if (from.id === to.id) {
+        this.ui.log("Cannot create connection to same aim", "error")
+        return
+      }
+
+      // Check if connection already exists
+      if (from.outflows[to.id]) {
+        this.ui.log("Connection already exists between these aims", "warning")
+        return
+      }
+
       try {
-        this.aimNetwork.createAndSelectFlow(from, to) 
+        this.ui.log(`Creating connection from "${from.title}" to "${to.title}"...`, "info")
+        await this.aimNetwork.createAndSelectFlow(from, to)
+        this.ui.log("Connection created successfully", "success")
       } catch(err: any) {
-        this.ui.log(err.toString(), "error")
+        console.error('Failed to create flow:', err)
+        this.ui.log(`Failed to create connection: ${err.message || err.toString()}`, "error")
       }
     }, 
     togglePin() {
