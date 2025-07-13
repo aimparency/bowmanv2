@@ -112,6 +112,19 @@
 
     <h3>Flows</h3>
     <div class="block">
+      <Slider
+        v-if="mayEdit"
+        name="loop weight"
+        left="0"
+        right="100"
+        :factor="100/0xffff"
+        :decimalPlaces="2"
+        :from="0"
+        :to="0xffff"
+        :value="aim.loopWeight"
+        @update="updateLoopWeight"/>
+      <p v-else>Loop weight: {{ Math.floor(100 * aim.loopWeight / 0xffff) }}%</p>
+      
       <p class="flowDirection">Incoming flows</p>
       <div class="flow loop">
         Self-importance: {{ Math.floor(100 * aim.loopShare) }}%
@@ -156,6 +169,7 @@
 import { defineComponent, PropType, computed, ref } from "vue"
 import { Aim, Flow, useAimNetwork } from "../stores/aim-network-git"
 import TagInput from './TagInput.vue'
+import Slider from './Slider.vue'
 import BackButton from './SideBar/BackButton.vue'
 
 interface Outflow {
@@ -168,6 +182,7 @@ export default defineComponent({
   name: "AimDetails",
   components: {
     TagInput,
+    Slider,
     BackButton, 
   },
   props: {
@@ -292,6 +307,10 @@ export default defineComponent({
 
     updateTags(tags: string[]) {
       this.aim.tags = tags
+    },
+
+    updateLoopWeight(v: number) {
+      this.aim.updateLoopWeight(v)
     },
 
     addAssignee() {

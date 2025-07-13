@@ -4,9 +4,6 @@
     class='aim-map'
     :viewBox="viewBox">
     <defs>
-      <pattern id="unpublished" width="1" height="1" patternTransform="scale(0.8) rotate(-45 0 0)" patternUnits="userSpaceOnUse">
-        <rect x1="0" y1="0" width="1" height="0.5" style="stroke:none; fill:#2222" />
-      </pattern>
       <linearGradient v-for="color, key in summitColors" :key="key" 
         :id="'summit-gradient-' + key"
         gradientTransform="rotate(90)">
@@ -394,6 +391,8 @@ export default defineComponent({
               let effort = Math.trunc(10 * 150 / this.map.scale)
               aim.updateEffort(effort)
               aim.tokens = effort
+            }).catch(error => {
+              console.error('Failed to create aim:', error)
             })
           }
         }

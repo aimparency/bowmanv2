@@ -17,13 +17,7 @@
         @mouseup='mouseUp'
         @touchend='touchend'
       />
-      <circle v-if='!published'
-        class="unpublished-overlay"
-        cx="0"
-        cy="0"
-        r="1"
-        fill="url(#unpublished)"
-      />
+      <!-- Removed diagonal stripes overlay - all aims are saved to git immediately -->
       <text
         dominant-baseline="central"
         text-anchor="middle"
@@ -38,8 +32,7 @@
           :key="i"> {{ line }} </tspan>
       </text>
       <g v-if='selected'>
-        <g v-if="published"
-          transform="translate(-1, -1) scale(0.2)">
+        <g transform="translate(-1, -1) scale(0.2)">
           <circle 
             class="button"
             @click.stop="togglePin"
@@ -106,9 +99,7 @@ export default defineComponent({
     loading() : boolean {
       return this.aim.anyTransactionPending()
     }, 
-    published() : boolean {
-      return this.aim.address !== undefined
-    },
+    // Removed published computed property - all aims are saved to git immediately
     showTools() : boolean {
       return this.selected && this.map.connectFrom == undefined; 
     }, 
@@ -198,9 +189,6 @@ export default defineComponent({
       animation: dash 1.5s linear infinite;
       stroke-linecap: round;
     }
-  }
-  .unpublished-overlay {
-    pointer-events: none; 
   }
   text{
     fill: #fff; 

@@ -243,7 +243,13 @@ export class Aim {
   }
 
   updateLoopWeight(value: number) {
-    this.loopWeight = value
+    value = clampFlowWeight(Math.round(value))
+    if (value === this.loopWeightOrigin) {
+      this.loopWeightOrigin = undefined
+    } else if (this.loopWeightOrigin === undefined) {
+      this.loopWeightOrigin = this.loopWeight
+    }
+    this.setLoopWeight(value)
   }
 
   // Convert from API format
@@ -499,6 +505,11 @@ export const useAimNetwork = defineStore('aim-network', {
             continue // Skip invalid contributions
           }
           
+          // Skip self-connections - they should only be represented by loopWeight/loopShare
+          if (contrib.fromAim.id === aim.aimId?.id) {
+            continue
+          }
+          
           const fromAimId = this.aimIdToLocalId[contrib.fromAim.id]
           const fromAim = this.aims[fromAimId]
           
@@ -517,6 +528,11 @@ export const useAimNetwork = defineStore('aim-network', {
         for (const contrib of outgoingContribs) {
           if (!contrib.toAim || !contrib.toAim.id) {
             continue // Skip invalid contributions
+          }
+          
+          // Skip self-connections - they should only be represented by loopWeight/loopShare
+          if (contrib.toAim.id === aim.aimId?.id) {
+            continue
           }
           
           const toAimId = this.aimIdToLocalId[contrib.toAim.id]
@@ -554,6 +570,9 @@ export const useAimNetwork = defineStore('aim-network', {
       for (const contrib of incomingContribs) {
         if (!contrib.fromAim || !contrib.fromAim.id) continue
         
+        // Skip self-connections - they should only be represented by loopWeight/loopShare
+        if (contrib.fromAim.id === aim.aimId?.id) continue
+        
         const fromAimId = this.aimIdToLocalId[contrib.fromAim.id]
         const fromAim = this.aims[fromAimId]
         
@@ -571,6 +590,9 @@ export const useAimNetwork = defineStore('aim-network', {
       // Process outgoing contributions
       for (const contrib of outgoingContribs) {
         if (!contrib.toAim || !contrib.toAim.id) continue
+        
+        // Skip self-connections - they should only be represented by loopWeight/loopShare
+        if (contrib.toAim.id === aim.aimId?.id) continue
         
         const toAimId = this.aimIdToLocalId[contrib.toAim.id]
         const toAim = this.aims[toAimId]
@@ -701,10 +723,20 @@ export const useAimNetwork = defineStore('aim-network', {
     },
 
     // UI interaction methods
-    createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
+    async createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
       const aim = this.createLocalAim(modifyAimCb)
       this.selectedAim = aim
       useUi().sideMenuOpen = true
+      
+      // Immediately save to git repository
+      try {
+        await this.saveNewAimToGit(aim)
+        useNotifications().success(`Created new aim: "${aim.title}"`)
+      } catch (error) {
+        console.error('Failed to save new aim:', error)
+        useNotifications().error('Failed to save new aim to repository')
+      }
+      
       return aim
     },
 
@@ -718,6 +750,43 @@ export const useAimNetwork = defineStore('aim-network', {
       
       this.aims[rawAim.id] = rawAim
       return this.aims[rawAim.id] 
+    },
+
+    async saveNewAimToGit(aim: Aim) {
+      const apiConn = useApiConnection()
+      const api = apiConn.getAPI()
+      
+      // Set default title if empty
+      if (!aim.title.trim()) {
+        aim.title = "New Aim"
+      }
+      
+      try {
+        const result = await api.createAim({
+          title: aim.title,
+          description: aim.description,
+          statusNote: aim.statusNote,
+          assignees: aim.assignees,
+          tags: aim.tags,
+          targetDate: aim.targetDate,
+          effort: aim.effort,
+          metadata: {
+            effort: aim.effort,
+            position: { x: aim.pos[0], y: aim.pos[1] }
+          }
+        })
+        
+        // Update the aim with the repository ID
+        aim.aimId = result.aimId
+        this.aimIdToLocalId[result.aimId.id] = aim.id
+        
+        // Clear the origin since it's now saved
+        aim.clearOrigin()
+        
+        return result
+      } catch (error) {
+        throw error
+      }
     },
 
     focusAim(aim: Aim) {
@@ -881,6 +950,12 @@ export const useAimNetwork = defineStore('aim-network', {
     async createAndSelectFlow(from: Aim, to: Aim) {
       if (!from.aimId || !to.aimId) {
         useUi().log("Cannot create flow: aims missing repository IDs", "error")
+        return
+      }
+
+      // Prevent self-connections
+      if (from.id === to.id) {
+        useUi().log("Cannot create connection to same aim", "error")
         return
       }
 
