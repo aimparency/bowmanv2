@@ -24,7 +24,7 @@
 import { defineComponent } from "vue";
 import { useApiConnection } from "../stores/api-connection";
 import { useAimNetwork } from "../stores/aim-network-git";
-import { useUi } from "../stores/ui";
+import { useNotifications } from "../stores/notifications";
 
 export default defineComponent({
   name: "ConnectionStatus",
@@ -34,7 +34,10 @@ export default defineComponent({
   data() {
     return {
       repositoryPath: import.meta.env.DEV ? '/home/felix/dev/aimparency/bowman-v2/test-repo' : '',
-      debounceTimer: null as ReturnType<typeof setTimeout> | null
+      debounceTimer: null as ReturnType<typeof setTimeout> | null,
+      apiConnection: useApiConnection(),
+      aimNetwork: useAimNetwork(),
+      notifications: useNotifications()
     }
   },
   computed: {
@@ -48,16 +51,6 @@ export default defineComponent({
       return parts[parts.length - 1]
     }
   }, 
-  setup() {
-    const apiConnection = useApiConnection()
-    const aimNetwork = useAimNetwork()
-    const ui = useUi()
-    return {
-      apiConnection,
-      aimNetwork,
-      ui
-    }
-  },
   methods: {
     onPathInput() {
       // Clear existing timer
@@ -87,18 +80,18 @@ export default defineComponent({
 
     async setRepository(path: string) {
       try {
-        this.ui.log(`Setting repository to: ${path}`, 'info')
+        this.notifications.info(`Setting repository to: ${path}`)
         
         // First try to set the repository
         const result = await this.apiConnection.setRepository(path)
         
         if (result.success) {
-          this.ui.log(`Repository set successfully: ${result.path}`, 'success')
+          this.notifications.success(`Repository set successfully: ${result.path}`)
           
           // Load the repository data
           await this.aimNetwork.loadRepository(result.path)
           
-          this.ui.log('Repository loaded successfully', 'success')
+          this.notifications.success('Repository loaded successfully')
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -113,7 +106,7 @@ export default defineComponent({
             await this.initializeRepository(path)
           }
         } else {
-          this.ui.log(`Failed to set repository: ${errorMessage}`, 'error')
+          this.notifications.error(`Failed to set repository: ${errorMessage}`)
         }
       }
     },
@@ -126,7 +119,7 @@ export default defineComponent({
         const description = prompt('Enter a description for the root aim:', 'This is the main objective of this project')
         if (!description) return
 
-        this.ui.log(`Initializing repository at: ${path}`, 'info')
+        this.notifications.info(`Initializing repository at: ${path}`)
         
         await this.aimNetwork.initializeRepository(path, {
           title: title.trim(),
@@ -134,10 +127,10 @@ export default defineComponent({
           effort: 5
         })
         
-        this.ui.log('Repository initialized and loaded successfully', 'success')
+        this.notifications.success('Repository initialized and loaded successfully')
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        this.ui.log(`Failed to initialize repository: ${errorMessage}`, 'error')
+        this.notifications.error(`Failed to initialize repository: ${errorMessage}`)
       }
     },
 

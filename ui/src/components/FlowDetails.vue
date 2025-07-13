@@ -125,6 +125,7 @@ export default defineComponent({
     // Auto-save functionality for flows
     const { isSaving, isDirty, debouncedSave, saveImmediately } = useAutoSave(async () => {
       if (!props.flow.from.aimId || !props.flow.into.aimId) return
+      if (!aimNetwork.currentRepo) return // Only save if repository is connected
       await aimNetwork.commitFlowChanges(props.flow)
     }, { delay: 1000 })
     

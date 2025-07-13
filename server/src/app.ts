@@ -460,6 +460,91 @@ app.post('/api/aims/search', asyncHandler(async (req: express.Request, res: expr
   res.json(result);
 }));
 
+// Create a new aim
+app.post('/api/aims', asyncHandler(async (req: express.Request, res: express.Response) => {
+  if (!currentRepo) {
+    throw new BowmanError('No repository selected', 400, 'NO_REPO_SELECTED');
+  }
+
+  const { title, description, statusNote, assignees, tags, targetDate, effort, metadata } = req.body;
+
+  // Validate required fields
+  if (!title || typeof title !== 'string') {
+    throw new BowmanError('title is required', 400, 'INVALID_AIM');
+  }
+  if (!description || typeof description !== 'string') {
+    throw new BowmanError('description is required', 400, 'INVALID_AIM');
+  }
+
+  // Generate a unique aim ID
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const aimId = `aim_${timestamp}_${random}`;
+
+  const now = new Date().toISOString();
+
+  // Create the aim object
+  const aim = {
+    id: { repoLink: null, id: aimId },
+    title,
+    description,
+    status: 'not_reached',
+    statusNote: statusNote || '',
+    assignees: assignees || [],
+    tags: tags || [],
+    created: now,
+    lastModified: now,
+    targetDate: targetDate || null,
+    metadata: metadata || {}
+  };
+
+  // Ensure the aims directory exists
+  const aimsDir = join(currentRepo, '.quiver', 'aims');
+  await fs.mkdir(aimsDir, { recursive: true });
+
+  // Write the aim to file
+  const aimPath = join(aimsDir, `${aimId}.json`);
+  await fs.writeFile(aimPath, JSON.stringify(aim, null, 2));
+
+  res.json({ success: true, aimId: aim.id });
+}));
+
+// Update an existing aim
+app.put('/api/aims/:aimId', asyncHandler(async (req: express.Request, res: express.Response) => {
+  if (!currentRepo) {
+    throw new BowmanError('No repository selected', 400, 'NO_REPO_SELECTED');
+  }
+
+  const aimId = validateAimId(req.params.aimId);
+  const updates = req.body;
+
+  // Validate that the aim exists
+  const aimPath = join(currentRepo, '.quiver', 'aims', `${aimId}.json`);
+  if (!existsSync(aimPath)) {
+    throw new BowmanError(`Aim ${aimId} not found`, 404, 'AIM_NOT_FOUND');
+  }
+
+  // Read the existing aim
+  const existingAim = JSON.parse(await fs.readFile(aimPath, 'utf-8'));
+
+  // Merge updates with existing aim
+  const updatedAim = {
+    ...existingAim,
+    ...updates,
+    lastModified: new Date().toISOString()
+  };
+
+  // Validate required fields
+  if (!updatedAim.title || typeof updatedAim.title !== 'string') {
+    throw new BowmanError('title is required', 400, 'INVALID_AIM');
+  }
+
+  // Write the updated aim back to file
+  await fs.writeFile(aimPath, JSON.stringify(updatedAim, null, 2));
+
+  res.json({ success: true, aim: updatedAim });
+}));
+
 // Create a new contribution
 app.post('/api/contributions', asyncHandler(async (req: express.Request, res: express.Response) => {
   if (!currentRepo) {

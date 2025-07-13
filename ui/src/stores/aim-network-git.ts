@@ -6,7 +6,6 @@ import { useApiConnection } from './api-connection'
 import type { Aim as ApiAim, AimId, Contribution, Meta } from './api-connection'
 
 import { useMap } from './map'
-import { useUi } from './ui'
 import { useNotifications } from './notifications'
 
 import * as vec2 from '../vec2'
@@ -662,11 +661,11 @@ export const useAimNetwork = defineStore('aim-network', {
         this.aims[aim.id] = aim
         this.aimIdToLocalId[result.aimId.id] = aim.id
         
-        useUi().log(`Created aim: ${aim.title}`, "success")
+        useNotifications().success(`Created aim: ${aim.title}`)
         return aim
         
       } catch (error) {
-        useUi().log(`Failed to create aim: ${error}`, "error")
+        useNotifications().error(`Failed to create aim: ${error}`)
         throw error
       }
     },
@@ -685,10 +684,10 @@ export const useAimNetwork = defineStore('aim-network', {
         await api.updateAim(aim.aimId.id, aim.toApiAim())
         aim.clearOrigin()
         
-        useUi().log(`Updated aim: ${aim.title}`, "success")
+        useNotifications().success(`Updated aim: ${aim.title}`)
         
       } catch (error) {
-        useUi().log(`Failed to update aim: ${error}`, "error")
+        useNotifications().error(`Failed to update aim: ${error}`)
         throw error
       } finally {
         aim.pendingOperations.update = false
@@ -734,10 +733,10 @@ export const useAimNetwork = defineStore('aim-network', {
         
         toAim.recalcWeights()
         
-        useUi().log(`Created contribution from ${fromAim.title} to ${toAim.title}`, "success")
+        useNotifications().success(`Created contribution from ${fromAim.title} to ${toAim.title}`)
         
       } catch (error) {
-        useUi().log(`Failed to create contribution: ${error}`, "error")
+        useNotifications().error(`Failed to create contribution: ${error}`)
         throw error
       }
     },
@@ -855,17 +854,17 @@ export const useAimNetwork = defineStore('aim-network', {
 
     commitLoopWeight(aim: Aim) {
       // No-op for git version - changes are applied immediately
-      useUi().log("Loop weight saved locally in git repository", "info")
+      useNotifications().info("Loop weight saved locally in git repository")
     },
 
     buyTokens(aim: Aim, amount: number, price: number) {
       // No-op for git version
-      useUi().log("Token operations not supported in git version", "info")
+      useNotifications().info("Token operations not supported in git version")
     },
 
     sellTokens(aim: Aim, amount: number, price: number) {
       // No-op for git version
-      useUi().log("Token operations not supported in git version", "info")
+      useNotifications().info("Token operations not supported in git version")
     },
 
     removeAim(aim: Aim) {
@@ -875,12 +874,12 @@ export const useAimNetwork = defineStore('aim-network', {
         delete this.aimIdToLocalId[aim.aimId.id]
       }
       this.selectedAim = undefined
-      useUi().log(`Aim removed locally (not deleted from repository)`, "info")
+      useNotifications().info(`Aim removed locally (not deleted from repository)`)
     },
 
     transferAim(aim: Aim, newOwner: string) {
       // No-op for git version - no ownership system
-      useUi().log("Ownership transfer not supported in git version", "info")
+      useNotifications().info("Ownership transfer not supported in git version")
     },
 
     resetFlowChanges(flow: Flow) {
@@ -891,12 +890,12 @@ export const useAimNetwork = defineStore('aim-network', {
       // TODO: Implement contribution updates with relative positioning in API
       // For now, clear the origin to mark as committed locally
       flow.clearOrigin()
-      useUi().log("Flow changes saved locally (API update not yet implemented)", "info")
+      useNotifications().info("Flow changes saved locally (API update not yet implemented)")
     },
 
     createFlowOnChain(flow: Flow) {
       // No-op for git version - flows exist in files, not blockchain
-      useUi().log("Blockchain operations not supported in git version", "info")
+      useNotifications().info("Blockchain operations not supported in git version")
     },
 
     removeFlow(flow: Flow) {
@@ -912,7 +911,7 @@ export const useAimNetwork = defineStore('aim-network', {
       }
       
       this.selectedFlow = undefined
-      useUi().log(`Flow removed locally (not deleted from repository)`, "info")
+      useNotifications().info(`Flow removed locally (not deleted from repository)`)
     },
 
     allChanges() {
@@ -941,10 +940,10 @@ export const useAimNetwork = defineStore('aim-network', {
         })
         
         await this.loadRepository(result.path)
-        useUi().log(`Initialized repository at ${result.path}`, "success")
+        useNotifications().success(`Initialized repository at ${result.path}`)
         
       } catch (error) {
-        useUi().log(`Failed to initialize repository: ${error}`, "error")
+        useNotifications().error(`Failed to initialize repository: ${error}`)
         throw error
       }
     },
@@ -958,7 +957,7 @@ export const useAimNetwork = defineStore('aim-network', {
           await this.loadRepository(result.path)
         }
       } catch (error) {
-        useUi().log(`Failed to set repository: ${error}`, "error")
+        useNotifications().error(`Failed to set repository: ${error}`)
         throw error
       }
     },
@@ -971,13 +970,13 @@ export const useAimNetwork = defineStore('aim-network', {
 
     async createAndSelectFlow(from: Aim, to: Aim) {
       if (!from.aimId || !to.aimId) {
-        useUi().log("Cannot create flow: aims missing repository IDs", "error")
+        useNotifications().error("Cannot create flow: aims missing repository IDs")
         return
       }
 
       // Prevent self-connections
       if (from.id === to.id) {
-        useUi().log("Cannot create connection to same aim", "error")
+        useNotifications().error("Cannot create connection to same aim")
         return
       }
 
@@ -1054,12 +1053,12 @@ export const useAimNetwork = defineStore('aim-network', {
 
     createAimOnChain(aim: Aim) {
       // No-op for git version - aims exist in files, not blockchain
-      useUi().log("Blockchain operations not supported in git version", "info")
+      useNotifications().info("Blockchain operations not supported in git version")
     },
 
     commitAimChanges(aim: Aim) {
       // No-op for git version - changes are applied immediately
-      useUi().log("Changes saved locally in git repository", "info")
+      useNotifications().info("Changes saved locally in git repository")
     },
 
     commitAimMemberChanges(aim: Aim) {

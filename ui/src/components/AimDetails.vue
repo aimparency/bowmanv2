@@ -203,6 +203,7 @@ export default defineComponent({
     // Auto-save functionality
     const { isSaving, isDirty, debouncedSave, saveImmediately } = useAutoSave(async () => {
       if (!props.aim.aimId) return // Only save if aim has been saved to repo
+      if (!aimNetwork.currentRepo) return // Only save if repository is connected
       await aimNetwork.updateAim(props.aim)
     }, { delay: 1000 })
     

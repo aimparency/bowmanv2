@@ -54,7 +54,7 @@ import { defineComponent, PropType } from 'vue';
 
 import { Aim, useAimNetwork } from '../stores/aim-network-git'
 import { useMap } from '../stores/map';
-import { useUi} from '../stores/ui';
+import { useNotifications } from '../stores/notifications';
 
 import pinnedUrl from '../assets/pinned.svg';
 import pinUrl from '../assets/pin.svg';
@@ -64,7 +64,7 @@ export default defineComponent({
   data() {
     return {
       aimNetwork: useAimNetwork(),
-      ui: useUi(), 
+      notifications: useNotifications(), 
       map: useMap(),
       hint: undefined as string | undefined, 
     }
@@ -142,23 +142,23 @@ export default defineComponent({
     async callCreateFlow(from: Aim, to: Aim) {
       // Validate connection
       if (from.id === to.id) {
-        this.ui.log("Cannot create connection to same aim", "error")
+        this.notifications.error("Cannot create connection to same aim")
         return
       }
 
       // Check if connection already exists
       if (from.outflows[to.id]) {
-        this.ui.log("Connection already exists between these aims", "warning")
+        this.notifications.warning("Connection already exists between these aims")
         return
       }
 
       try {
-        this.ui.log(`Creating connection from "${from.title}" to "${to.title}"...`, "info")
+        this.notifications.info(`Creating connection from "${from.title}" to "${to.title}"...`)
         await this.aimNetwork.createAndSelectFlow(from, to)
-        this.ui.log("Connection created successfully", "success")
+        this.notifications.success("Connection created successfully")
       } catch(err: any) {
         console.error('Failed to create flow:', err)
-        this.ui.log(`Failed to create connection: ${err.message || err.toString()}`, "error")
+        this.notifications.error(`Failed to create connection: ${err.message || err.toString()}`)
       }
     }, 
     togglePin() {
